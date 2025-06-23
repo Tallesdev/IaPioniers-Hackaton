@@ -10,4 +10,9 @@
     <Compile Include="unifenas_api_python\routes\professor_routes.py" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="unifenas_api_python\cache\" />
+    <Folder Include="unifenas_api_python\local_data\" />
+  </ItemGroup>
+
 </Project>
