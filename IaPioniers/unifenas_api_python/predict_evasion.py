@@ -49,8 +49,8 @@ UNIFENAS_EMAIL = "hackathon@unifenas.br"
 UNIFENAS_PASSWORD = "hackathon#2025"
 
 # AJUSTES MAIS AGRESSIVOS AQUI:
-REQUEST_DELAY_SECONDS = 1.5 # Aumentado para 1.5 segundos (ou até 2.0 se necessário)
-MAX_CONCURRENT_REQUESTS = 2 # Reduzido para 2 requisições simultâneas (muito conservador, mas para testar)
+REQUEST_DELAY_SECONDS = 0.8 # Aumentado para 1.5 segundos (ou até 2.0 se necessário)
+MAX_CONCURRENT_REQUESTS = 5 # Reduzido para 2 requisições simultâneas (muito conservador, mas para testar)
 
 RETRY_SETTINGS = {
     'stop': stop_after_attempt(10), # Aumente mais as tentativas
@@ -221,7 +221,7 @@ async def run_evasion_prediction():
     print(df_raw_logs_for_prediction.head())
     
     # 3. Processar os novos dados para extrair as mesmas features
-     df_features_for_prediction = process_moodle_logs_for_evasion(df_raw_logs_for_prediction, inactivity_threshold_days=30)
+    df_features_for_prediction = process_moodle_logs_for_evasion(df_raw_logs_for_prediction, inactivity_threshold_days=30)
 
     if df_features_for_prediction.empty:
         print(f"[{datetime.now()}] Nenhum feature processada para previsão. DataFrame de features vazio.")
@@ -234,6 +234,25 @@ async def run_evasion_prediction():
     except Exception as e:
         print(f"[{datetime.now()}] Erro ao salvar features processadas: {e}")
     # ...
+     # --- INÍCIO DO CÓDIGO A SER ADICIONADO ---
+    # Preparar as features para a previsão do modelo de ML
+    # Assegura que todas as features que o modelo espera estejam presentes,
+    # preenchendo com 0 se alguma estiver faltando na nova coleta de dados.
+    # É crucial que X_predict contenha APENAS as features que o modelo foi treinado para ver,
+    # e na mesma ordem.
+
+    # Adiciona quaisquer features que o modelo espera mas que podem ter faltado
+    # na df_features_for_prediction, preenchendo com 0.
+    for feature in model_features:
+        if feature not in df_features_for_prediction.columns:
+            df_features_for_prediction[feature] = 0
+
+    # Seleciona as colunas de features que o modelo espera e trata quaisquer NaNs remanescentes.
+    # O .fillna(0) é uma forma simples de lidar com NaNs, mas a melhor prática seria usar
+    # os valores médios/medianos das features do conjunto de dados de TREINO.
+    X_predict = df_features_for_prediction[model_features].fillna(0)
+    # --- FIM DO CÓDIGO A SER ADICIONADO ---
+
 
     # 4. Realizar a Previsão do Modelo de ML
     print(f"[{datetime.now()}] Realizando previsões para {len(X_predict)} entradas com o modelo de ML...")
