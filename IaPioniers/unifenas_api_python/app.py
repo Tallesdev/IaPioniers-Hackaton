@@ -20,10 +20,12 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data') # Para arquivos de configuração/mapeamento estáticos (como professor_curso_mapping.json)
 CACHE_DIR = os.path.join(BASE_DIR, 'cache') # Para arquivos de cache gerados pelos scripts de ML
+LOCAL_DATA_DIR = os.path.join(BASE_DIR, 'local_data') # Para arquivos do modelo em predict_evasion.py
 
 # Criar diretórios se não existirem
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
+os.makedirs(LOCAL_DATA_DIR, exist_ok=True) # Criar também o local_data aqui para consistência
 
 # Caminhos dos arquivos de cache que o app.py consome
 PROCESSED_DATA_FILE = os.path.join(CACHE_DIR, 'processed_evasion_data.csv') # Gerado por process_evasion_data.py

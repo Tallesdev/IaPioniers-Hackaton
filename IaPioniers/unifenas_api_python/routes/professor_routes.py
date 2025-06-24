@@ -1,5 +1,7 @@
 ﻿# routes/professor_routes.py
 from flask import Blueprint, jsonify, request, current_app
+import pandas as pd # <--- ADICIONE OU MANTENHA ESTA LINHA
+import numpy as np  # <--- ADICIONE OU MANTENHA ESTA LINHA
 from evasion_reports import get_evasion_risk_students_for_professor
 from datetime import datetime
 
@@ -35,6 +37,8 @@ def professor_evasion_risk():
         course_name
     )
     return jsonify(risky_students_report)
+
+
 @professor_bp.route('/professor/course-summaries', methods=['GET'])
 def get_professor_course_summaries():
     professor_name = request.args.get('professor_id')
@@ -57,10 +61,6 @@ def get_professor_course_summaries():
 
     course_summaries = []
     
-    # Certifique-se de que a chave existe e que o valor é uma lista.
-    # professor_name pode vir com acentuação ou caixa diferente, então normalizar é bom
-    # No entanto, vamos assumir que o professor_course_mapping já tem a chave exata
-    # Para fins de teste, você pode querer printar professor_course_mapping.keys() aqui.
     courses_for_professor = professor_course_mapping.get(professor_name, [])
     print(f"DEBUG: Cursos mapeados para {professor_name}: {courses_for_professor}")
 
@@ -72,28 +72,43 @@ def get_professor_course_summaries():
     for course_name_identifier in courses_for_professor:
         print(f"DEBUG: Processando curso: {course_name_identifier}")
         
-        students_in_course_df = df_features_cache[
+        # Filtra os alunos que estão neste curso nas features e nos scores de risco
+        students_in_course_features_df = df_features_cache[
             (df_features_cache['course_fullname'] == course_name_identifier)
         ]
-        total_students_in_course = len(students_in_course_df)
+        total_students_in_course = len(students_in_course_features_df)
 
         risky_students_df = df_risk_scores_cache[
             (df_risk_scores_cache['course_fullname'] == course_name_identifier) &
-            # CORREÇÃO AQUI: Use 'is_at_risk' ou 'evasion_probability_ml'
             (df_risk_scores_cache['is_at_risk'] == 1) # Usando o indicador binário do rule-based
-            # OU se preferir o ML: (df_risk_scores_cache['evasion_probability_ml'] > 0.5)
-            # OU se preferir o score de regras: (df_risk_scores_cache['overall_evasion_score'] >= SEU_THRESHOLD_AQUI)
         ]
         students_at_risk_in_course = len(risky_students_df)
 
         print(f"DEBUG: Curso '{course_name_identifier}': Total de alunos: {total_students_in_course}, Alunos em risco: {students_at_risk_in_course}")
 
+        # --- CÁLCULO DE AVERAGE ENGAGEMENT SCORE ---
+        average_engagement_score = None # Inicializa a variável antes do if
+        if not students_in_course_features_df.empty and 'engagement_per_day' in students_in_course_features_df.columns:
+            valid_engagements = students_in_course_features_df['engagement_per_day'].dropna()
+            if not valid_engagements.empty:
+                average_engagement_score = round(valid_engagements.mean(), 2)
+        print(f"DEBUG: AverageEngagementScore para '{course_name_identifier}': {average_engagement_score}")
+
+        # --- CÁLCULO DE LAST ACTIVITY DATE ---
+        last_activity_date = None # Inicializa a variável antes do if
+        if not students_in_course_features_df.empty and 'course_last_activity_date' in students_in_course_features_df.columns:
+            valid_dates = pd.to_datetime(students_in_course_features_df['course_last_activity_date'], errors='coerce').dropna()
+            if not valid_dates.empty:
+                last_activity_date = valid_dates.max().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"DEBUG: LastActivityDate para '{course_name_identifier}': {last_activity_date}")
+
+        # Adiciona os dados ao resumo do curso, usando as variáveis calculadas
         course_summaries.append({
             "CourseName": course_name_identifier,
             "StudentsInCourse": total_students_in_course,
             "StudentsAtRiskInCourse": students_at_risk_in_course,
-            "LastActivityDate": None, # Ainda sem implementação para esta feature
-            "AverageEngagementScore": None # Ainda sem implementação para esta feature
+            "LastActivityDate": last_activity_date, # Usando a variável 'last_activity_date'
+            "AverageEngagementScore": average_engagement_score # Usando a variável 'average_engagement_score'
         })
     
     print(f"DEBUG: Resumo final dos cursos: {course_summaries}")
