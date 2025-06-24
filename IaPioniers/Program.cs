@@ -10,6 +10,7 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -38,6 +39,13 @@ builder.Services.AddHttpClient<IaPioniersApiService>(client =>
     // Adicione cabeçalhos padrão aqui se sua API Python precisar (ex: Accept, Auth, etc.)
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
+// Adicione aqui a configuração de logging
+builder.Logging.ClearProviders(); // Limpa os provedores de log padrão
+builder.Logging.AddConsole();    // Adiciona o provedor de log para o console
+builder.Logging.AddDebug();      // Adiciona o provedor de log para a janela de Debug do VS
+
+// Definir o nível mínimo de log para DEBUG para ver todas as mensagens
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 builder.Services.AddSingleton<ProfessorCourseMappingService>();
 
@@ -61,6 +69,7 @@ builder.Services.AddHttpClient<IProfessorDashboardService, ProfessorDashboardSer
     // Você pode adicionar headers padrão se sua API IA precisar (ex: API Key)
     // client.DefaultRequestHeaders.Add("X-Api-Key", "sua_chave_secreta");
 });
+
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();

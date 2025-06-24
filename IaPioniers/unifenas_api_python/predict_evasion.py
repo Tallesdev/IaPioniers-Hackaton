@@ -25,7 +25,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 # Definição do caminho do cache e do modelo (para carregamento)
-RAW_LOGS_CACHE_FILE = os.path.join(LOCAL_DATA_DIR, 'raw_logs_cache.pkl')
+RAW_LOGS_CACHE_FILE = os.path.join(LOCAL_DATA_DIR, 'raw_logs_cache.pkl') # ARQUIVO DE LOGS BRUTOS CACHEADOS
 # FEATURES_ONLY_CACHE_FILE = os.path.join(LOCAL_DATA_DIR, 'features_only_cache.pkl') # Esta linha pode ser removida
 # RISK_SCORES_CACHE_FILE = os.path.join(LOCAL_DATA_DIR, 'risk_scores_cache.pkl') # Esta linha pode ser removida se só for salvar CSV
 
@@ -42,24 +42,23 @@ APP_RISK_SCORES_FILE = os.path.join(CACHE_DIR, 'evasion_predictions_detailed.csv
 APP_FEATURES_FILE = os.path.join(LOCAL_DATA_DIR, 'features_data_for_app.pkl') # Ou CSV, mas PKL é mais eficiente para DataFrames
 
 
-# --- Seções de Configuração para Coleta de Logs ---
-# --- Seções de Configuração para Coleta de Logs ---
+# --- Seções de Configuração para Coleta de Logs (mantidas mas não usadas nesta versão do predict_evasion) ---
 MOODLE_API_BASE_URL = "https://api.unifenas.br/v1"
 UNIFENAS_EMAIL = "hackathon@unifenas.br"
 UNIFENAS_PASSWORD = "hackathon#2025"
 
-# AJUSTES MAIS AGRESSIVOS AQUI:
-REQUEST_DELAY_SECONDS = 0.8 # Aumentado para 1.5 segundos (ou até 2.0 se necessário)
-MAX_CONCURRENT_REQUESTS = 5 # Reduzido para 2 requisições simultâneas (muito conservador, mas para testar)
+REQUEST_DELAY_SECONDS = 1.7
+MAX_CONCURRENT_REQUESTS = 5
 
 RETRY_SETTINGS = {
-    'stop': stop_after_attempt(10), # Aumente mais as tentativas
-    'wait': wait_exponential(multiplier=1, min=5, max=180), # min para 5s, max para 3 minutos
+    'stop': stop_after_attempt(10),
+    'wait': wait_exponential(multiplier=1, min=5, max=180),
     'retry': retry_if_exception_type(aiohttp.ClientError),
-    'reraise': False # Manter como False
+    'reraise': False
 }
 
-# --- Funções Assíncronas para a API Moodle ---
+# --- Funções Assíncronas para a API Moodle (agora não usadas diretamente aqui) ---
+# Essas funções são mantidas para referência ou se forem usadas em outro script como collect_raw_logs.py
 @retry(**RETRY_SETTINGS)
 async def get_access_token_async(email, password, api_base_url):
     """Obtém um token de acesso da API do Moodle de forma assíncrona."""
@@ -94,8 +93,6 @@ async def get_user_logs_async(session, user_id, token, api_base_url, semaphore, 
     start_date e end_date devem ser strings no formato 'YYYY-MM-DD'.
     """
     async with semaphore:
-        # Este delay agora é *dentro* do semáforo, garantindo que mesmo requisições concorrentes
-        # respeitem um tempo mínimo entre si para cada "slot" do semáforo.
         await asyncio.sleep(REQUEST_DELAY_SECONDS)
 
         url = f"{api_base_url}/moodle/logs-usuario"
@@ -111,19 +108,17 @@ async def get_user_logs_async(session, user_id, token, api_base_url, semaphore, 
             payload['end_date'] = end_date
 
         try:            
-            # A retry function _fetch_single_log_with_retry já está decorada com @retry(**RETRY_SETTINGS)
-            # e tem reraise=False, então a exceção 429 será capturada pelo bloco except externo
-            # após todas as tentativas falharem.
             async with session.get(url, headers=headers, params=payload) as response:
-                response.raise_for_status() # Lança ClientResponseError para 4xx/5xx
+                response.raise_for_status()
                 return await response.json()
-        except aiohttp.ClientResponseError as e: # Capture aiohttp.ClientResponseError especificamente
+        except aiohttp.ClientResponseError as e:
             print(f"[{datetime.now()}] Erro HTTP {e.status} para o usuário {user_id} no período {start_date} a {end_date}: {e.message}")
-            return [] # Retorna lista vazia para indicar falha e continuar
-        except aiohttp.ClientError as e: # Para outros erros de cliente aiohttp (conexão, etc.)
+            return []
+        except aiohttp.ClientError as e:
             print(f"[{datetime.now()}] Erro de conexão ou outro erro de cliente para o usuário {user_id} no período {start_date} a {end_date}: {e}")
             return []
 
+# Esta função não será mais chamada, mas é mantida caso precise retornar à coleta via API
 async def collect_recent_moodle_logs_for_prediction(email, password, api_base_url, days_to_look_back: int = 30):
     """
     Coleta logs recentes da API para fins de previsão.
@@ -182,17 +177,17 @@ async def collect_recent_moodle_logs_for_prediction(email, password, api_base_ur
             df_recent_logs['user_lastaccess'] = pd.to_datetime(df_recent_logs['user_lastaccess'], errors='coerce')
         elif pd.api.types.is_numeric_dtype(df_recent_logs['user_lastaccess']):
             df_recent_logs['user_lastaccess'] = pd.to_datetime(df_recent_logs['user_lastaccess'], unit='s', errors='coerce')
-        
+            
         df_recent_logs = df_recent_logs.dropna(subset=['date'])
         if 'course_fullname' not in df_recent_logs.columns:
             df_recent_logs['course_fullname'] = 'Curso Desconhecido'
-        # Adicionar 'eventname' e 'action' com valores padrão se não existirem
         if 'eventname' not in df_recent_logs.columns:
             df_recent_logs['eventname'] = 'Evento Desconhecido'
         if 'action' not in df_recent_logs.columns:
             df_recent_logs['action'] = 'Ação Desconhecida'
 
     return df_recent_logs
+
 
 async def run_evasion_prediction():
     print(f"[{datetime.now()}] Iniciando o processo de previsão de evasão...")
@@ -208,20 +203,45 @@ async def run_evasion_prediction():
         model_features = json.load(f)
     print(f"[{datetime.now()}] Modelo e lista de features carregados. Features esperadas: {model_features}")
 
-    # 2. Obter os novos dados para previsão (Chamando a nova função de coleta de logs recentes)
-    df_raw_logs_for_prediction = await collect_recent_moodle_logs_for_prediction(
-        UNIFENAS_EMAIL, UNIFENAS_PASSWORD, MOODLE_API_BASE_URL, days_to_look_back=30
-    )
+    # --- MODIFICAÇÃO AQUI: CARREGAR LOGS DO CACHE EM VEZ DE COLETAR NOVAMENTE ---
+    print(f"[{datetime.now()}] Carregando logs brutos do cache para previsão: {RAW_LOGS_CACHE_FILE}...")
+    if not os.path.exists(RAW_LOGS_CACHE_FILE):
+        print(f"[{datetime.now()}] Erro: Arquivo de cache de logs brutos '{RAW_LOGS_CACHE_FILE}' não encontrado.")
+        print(f"[{datetime.now()}] Por favor, execute 'collect_raw_logs.py' (ou a função de coleta de logs da API) para gerar este arquivo.")
+        return pd.DataFrame() # Retorna um DataFrame vazio se o cache não existir
+
+    try:
+        df_raw_logs_for_prediction = pd.read_pickle(RAW_LOGS_CACHE_FILE)
+        print(f"[{datetime.now()}] Logs brutos carregados do cache. Total de logs: {len(df_raw_logs_for_prediction)}")
+    except Exception as e:
+        print(f"[{datetime.now()}] Erro ao carregar logs brutos do cache '{RAW_LOGS_CACHE_FILE}': {e}")
+        return pd.DataFrame() # Retorna um DataFrame vazio em caso de erro de carregamento
 
     if df_raw_logs_for_prediction.empty:
-        print(f"[{datetime.now()}] Nenhum log recente disponível para previsão. Abortando.")
+        print(f"[{datetime.now()}] Nenhum log disponível no cache para previsão. Abortando.")
         return
 
-    print("\nLogs recentes coletados (amostra):")
+    print("\nLogs brutos carregados (amostra):")
     print(df_raw_logs_for_prediction.head())
     
-    # 3. Processar os novos dados para extrair as mesmas features
+    # 3. Processar os dados brutos para extrair as mesmas features
+    print(f"[{datetime.now()}] Iniciando processamento de features para evasão...")
     df_features_for_prediction = process_moodle_logs_for_evasion(df_raw_logs_for_prediction, inactivity_threshold_days=30)
+    print(f"[{datetime.now()}] Processamento de features concluído.")
+
+    print(f"[{datetime.now()}] Total de entradas de features (alunos x cursos): {len(df_features_for_prediction)}")
+    print(f"[{datetime.now()}] Amostra de features geradas:")
+    print(df_features_for_prediction.head())
+    
+    # Debug prints para as features, conforme solicitado anteriormente
+    print(f"[{datetime.now()}] Colunas em df_features_for_prediction: {df_features_for_prediction.columns.tolist()}")
+    print(f"[{datetime.now()}] Amostra de df_features_for_prediction antes do calculador de risco:")
+    print(df_features_for_prediction.head())
+    if 'days_since_last_access_global' in df_features_for_prediction.columns:
+        print(f"[{datetime.now()}] Média e Máx de days_since_last_access_global: {df_features_for_prediction['days_since_last_access_global'].mean()} / {df_features_for_prediction['days_since_last_access_global'].max()}")
+    if 'is_in_first_activity_cycle_no_submission' in df_features_for_prediction.columns:
+        print(f"[{datetime.now()}] Contagem de is_in_first_activity_cycle_no_submission True: {df_features_for_prediction['is_in_first_activity_cycle_no_submission'].sum()}")
+    
 
     if df_features_for_prediction.empty:
         print(f"[{datetime.now()}] Nenhum feature processada para previsão. DataFrame de features vazio.")
@@ -234,67 +254,48 @@ async def run_evasion_prediction():
     except Exception as e:
         print(f"[{datetime.now()}] Erro ao salvar features processadas: {e}")
     # ...
-     # --- INÍCIO DO CÓDIGO A SER ADICIONADO ---
+    
     # Preparar as features para a previsão do modelo de ML
-    # Assegura que todas as features que o modelo espera estejam presentes,
-    # preenchendo com 0 se alguma estiver faltando na nova coleta de dados.
-    # É crucial que X_predict contenha APENAS as features que o modelo foi treinado para ver,
-    # e na mesma ordem.
-
-    # Adiciona quaisquer features que o modelo espera mas que podem ter faltado
-    # na df_features_for_prediction, preenchendo com 0.
     for feature in model_features:
         if feature not in df_features_for_prediction.columns:
             df_features_for_prediction[feature] = 0
 
-    # Seleciona as colunas de features que o modelo espera e trata quaisquer NaNs remanescentes.
-    # O .fillna(0) é uma forma simples de lidar com NaNs, mas a melhor prática seria usar
-    # os valores médios/medianos das features do conjunto de dados de TREINO.
     X_predict = df_features_for_prediction[model_features].fillna(0)
-    # --- FIM DO CÓDIGO A SER ADICIONADO ---
 
 
     # 4. Realizar a Previsão do Modelo de ML
     print(f"[{datetime.now()}] Realizando previsões para {len(X_predict)} entradas com o modelo de ML...")
     predictions = model.predict(X_predict)
-    prediction_probabilities = model.predict_proba(X_predict)[:, 1] # Probabilidade da classe positiva (evadido)
+    prediction_probabilities = model.predict_proba(X_predict)[:, 1]
     
     # Adicionar as previsões ao DataFrame de features
-    df_features_for_prediction['predicted_evaded_ml'] = predictions # Renomeado para evitar conflito com is_at_risk do rule-based
-    df_features_for_prediction['evasion_probability_ml'] = prediction_probabilities # Renomeado
+    df_features_for_prediction['predicted_evaded_ml'] = predictions
+    df_features_for_prediction['evasion_probability_ml'] = prediction_probabilities
 
     # 5. Calcular o score de risco baseado em regras usando evasion_risk_calculator
     print(f"[{datetime.now()}] Calculando scores de risco baseados em regras...")
 
-    # *** INÍCIO DA CORREÇÃO ***
-    # Antes de chamar calculate_evasion_risk_scores, garanta que as colunas de identificação
-    # necessárias para o output final estejam presentes no DataFrame que será passado
-    # e que a função as retorne.
-
-    # Precisamos garantir que df_features_for_prediction tenha todas as colunas
-    # que calculate_evasion_risk_scores espera e que queremos no output final.
-    # As colunas 'user_id', 'user_name', 'course_fullname' são cruciais.
-    # A função calculate_evasion_risk_scores usa 'overall_last_access_days_ago'
-    # e 'course_last_activity_days_ago' entre outras.
-    
-    # É fundamental que calculate_evasion_risk_scores mantenha 'user_id', 'user_name', 'course_fullname'
-    # em seu resultado final, ou as re-adicione.
-    # Vamos passar apenas as colunas necessárias para calculate_evasion_risk_scores
-    # e que queremos de volta para a mesclagem.
-
-    # Colunas que calculate_evasion_risk_scores precisa e que queremos no resultado final
     cols_for_rule_based = [
         'user_id', 'user_name', 'course_fullname', 
         'overall_last_access_days_ago', 'course_last_activity_days_ago',
-        # Adicione outras features que 'calculate_evasion_risk_scores' usa para suas regras,
-        # como 'course_activity_count', 'engagement_per_day', etc.
         'course_activity_count', 'course_unique_actions',
-        'course_activity_duration_days'
+        'course_activity_duration_days',
+        # Adicione todas as outras features usadas nas regras do evasion_risk_calculator
+        'total_actions_global', 
+        'global_forum_posts_count', 
+        'global_quiz_attempts_count',
+        'is_in_first_activity_cycle_no_submission',
+        'has_recent_visual_interaction_in_cycle',
+        'unique_resource_types_accessed_course',
+        'has_falling_trend_90_days'
     ]
     
-    # Filtra o DataFrame de features para ter apenas as colunas que serão usadas no cálculo de risco baseado em regras
-    # e as colunas de identificação.
-    df_for_rule_based = df_features_for_prediction[cols_for_rule_based].copy()
+    # Garante que apenas as colunas necessárias e existentes sejam selecionadas
+    # Se uma coluna não existir em df_features_for_prediction, ela será ignorada aqui.
+    # No entanto, a função calculate_evasion_risk_scores deve lidar com a ausência de colunas.
+    existing_cols_for_rule_based = [col for col in cols_for_rule_based if col in df_features_for_prediction.columns]
+    
+    df_for_rule_based = df_features_for_prediction[existing_cols_for_rule_based].copy()
 
     df_rule_based_risks = calculate_evasion_risk_scores(df_for_rule_based)
 
@@ -303,40 +304,24 @@ async def run_evasion_prediction():
         return
 
     # 6. Combinar os resultados:
-    # O df_rule_based_risks AGORA DEVE CONTER 'user_id', 'user_name', 'course_fullname'
-    # pois garantimos que elas foram passadas para calculate_evasion_risk_scores e esperamos que ela as mantenha.
-    # Mescla as previsões do ML ao DataFrame de riscos baseado em regras
-    # A mesclagem deve ser feita por user_id e course_fullname para garantir a unicidade
     df_final_risk_scores = pd.merge(
         df_rule_based_risks,
         df_features_for_prediction[['user_id', 'course_fullname', 'predicted_evaded_ml', 'evasion_probability_ml']],
         on=['user_id', 'course_fullname'],
         how='left'
     )
-    # *** FIM DA CORREÇÃO ***
-
-    # Renomear as colunas para o que o app.py espera, se necessário.
-    # App.py espera: 'user_id', 'user_name', 'overall_evasion_score', 'is_at_risk', 'evasion_reasons'
-    # 'overall_evasion_score' e 'evasion_reasons' vêm do rule-based.
-    # 'is_at_risk' é do rule-based, mas você pode querer uma coluna separada para o ML
-    # 'course_fullname' também está lá.
-    
-    # Para o app.py, vamos manter as colunas que ele espera e adicionar as do ML.
-    # É importante que 'overall_evasion_score' e 'is_at_risk' sejam os do rule-based score
-    # ou que você decida qual priorizar. Por enquanto, mantemos as do rule-based.
     
     final_columns = [
         'user_id',
         'user_name',
-        'course_fullname', # Adicionado explicitamente aqui para garantir
-        'overall_evasion_score', # Score baseado em regras
-        'is_at_risk', # At-risk baseado em regras
-        'evasion_reasons', # Razões baseadas em regras
-        'predicted_evaded_ml', # Previsão binária do modelo de ML
-        'evasion_probability_ml' # Probabilidade do modelo de ML
+        'course_fullname',
+        'overall_evasion_score',
+        'is_at_risk',
+        'evasion_reasons',
+        'predicted_evaded_ml',
+        'evasion_probability_ml'
     ]
     
-    # Selecionar apenas as colunas finais
     df_risk_scores_to_save = df_final_risk_scores[final_columns]
 
     # 7. Salvar o DataFrame de scores de risco completo para o CACHE_DIR com o nome esperado pelo app.py
@@ -345,11 +330,6 @@ async def run_evasion_prediction():
         print(f"[{datetime.now()}] Scores de risco detalhados salvos para o app.py em: {APP_RISK_SCORES_FILE}")
     except Exception as e:
         print(f"[{datetime.now()}] Erro ao salvar '{APP_RISK_SCORES_FILE}': {e}")
-
-    # A linha abaixo que salva um CSV com timestamp é opcional, mantida para depuração se desejar.
-    # output_filename_csv_debug = os.path.join(LOCAL_DATA_DIR, f"evasion_predictions_detailed_debug_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-    # df_risk_scores_to_save.to_csv(output_filename_csv_debug, index=False)
-    # print(f"[{datetime.now()}] Previsões detalhadas (debug) salvas em CSV: {output_filename_csv_debug}")
 
 
     print(f"[{datetime.now()}] Processo de previsão de evasão concluído.")

@@ -5,11 +5,14 @@ import os
 import json
 import logging
 from datetime import datetime
-import joblib # Importar joblib para carregar .pkl, se FEATURES_FILE for pkl
+import joblib # Importar joblib para carregar .pkl
 
 # Importar Blueprints
 from routes.professor_routes import professor_bp
-# from routes.student_routes import student_bp # Uncomment if you have student_bp
+from routes.evasion_report_routes import evasion_report_bp
+from routes.status_routes import status_bp
+from routes.student_routes import student_bp
+
 
 # Configuração do Logger
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
@@ -32,17 +35,37 @@ PROCESSED_DATA_FILE = os.path.join(CACHE_DIR, 'processed_evasion_data.csv') # Ge
 RISK_SCORES_FILE = os.path.join(CACHE_DIR, 'evasion_predictions_detailed.csv') # Gerado por predict_evasion.py
 FEATURES_FILE = os.path.join(CACHE_DIR, 'student_features.csv') # Gerado por process_evasion_data.py
 PROFESSOR_MAPPING_FILE = os.path.join(DATA_DIR, 'professor_curso_mapping.json') # Arquivo de mapeamento manual
+RAW_LOGS_FILE = os.path.join(LOCAL_DATA_DIR, 'raw_logs_cache.pkl') # <-- DEFINIÇÃO ADICIONADA AQUI
 
 # Variáveis de cache globais (serão preenchidas pela função load_data_to_cache)
 app.config['PROCESSED_DATA_CACHE'] = None
 app.config['RISK_SCORES_CACHE'] = None
 app.config['FEATURES_CACHE'] = None
 app.config['PROFESSOR_COURSE_MAPPING'] = None
+app.config['RAW_LOGS_CACHE'] = None # <-- INICIALIZAÇÃO ADICIONADA AQUI
 
 def load_data_to_cache():
     """Carrega os dados processados e de risco de evasão para o cache da aplicação."""
     app.logger.info(f"[{datetime.now()}] Tentando carregar dados para o cache...")
     
+    # Carregar RAW_LOGS_CACHE
+    if os.path.exists(RAW_LOGS_FILE):
+        try:
+            app.config['RAW_LOGS_CACHE'] = joblib.load(RAW_LOGS_FILE)
+            app.logger.info(f"[{datetime.now()}] '{RAW_LOGS_FILE}' carregado com sucesso. {len(app.config['RAW_LOGS_CACHE'])} linhas.")
+            # Opcional: garantir tipos de colunas essenciais, como 'date' ou 'time' se for datetime/numérico
+            if 'time' in app.config['RAW_LOGS_CACHE'].columns:
+                app.config['RAW_LOGS_CACHE']['time_dt'] = pd.to_datetime(app.config['RAW_LOGS_CACHE']['time'], unit='s', errors='coerce')
+            elif 'date' in app.config['RAW_LOGS_CACHE'].columns:
+                app.config['RAW_LOGS_CACHE']['time_dt'] = pd.to_datetime(app.config['RAW_LOGS_CACHE']['date'], errors='coerce')
+            
+        except Exception as e:
+            app.logger.error(f"[{datetime.now()}] Erro ao carregar '{RAW_LOGS_FILE}': {e}")
+            app.config['RAW_LOGS_CACHE'] = pd.DataFrame()
+    else:
+        app.logger.warning(f"[{datetime.now()}] Arquivo '{RAW_LOGS_FILE}' não encontrado. Execute 'collect_raw_logs.py' para coletar logs brutos.")
+        app.config['RAW_LOGS_CACHE'] = pd.DataFrame()
+
     # Carregar df_processed_data (de process_evasion_data.py)
     if os.path.exists(PROCESSED_DATA_FILE):
         try:
@@ -113,6 +136,7 @@ def health_check():
     """Verifica o status dos caches de dados."""
     status = {
         "status": "ok",
+        "raw_logs_loaded": app.config['RAW_LOGS_CACHE'] is not None and not app.config['RAW_LOGS_CACHE'].empty, # Adicionado aqui
         "risk_scores_loaded": app.config['RISK_SCORES_CACHE'] is not None and not app.config['RISK_SCORES_CACHE'].empty,
         "features_loaded": app.config['FEATURES_CACHE'] is not None and not app.config['FEATURES_CACHE'].empty,
         "professor_course_mapping_loaded": app.config['PROFESSOR_COURSE_MAPPING'] is not None and bool(app.config['PROFESSOR_COURSE_MAPPING']),
@@ -121,8 +145,10 @@ def health_check():
     return jsonify(status)
 
 # REGISTRAR BLUEPRINT DE PROFESSOR (COM PREFIXO DE URL)
-app.register_blueprint(professor_bp, url_prefix='/api')
-# app.register_blueprint(student_bp, url_prefix='/api') # Descomente se tiver student_bp
+app.register_blueprint(professor_bp)
+app.register_blueprint(evasion_report_bp)
+app.register_blueprint(student_bp)
+app.register_blueprint(status_bp)
 
 if __name__ == '__main__':
     # Este é um servidor de desenvolvimento, não recomendado para produção

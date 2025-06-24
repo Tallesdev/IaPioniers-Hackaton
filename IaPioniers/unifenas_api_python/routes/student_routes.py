@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, current_app, request
 from student_profile_generator import get_student_profile_details
 
 # Cria um Blueprint para as rotas de estudante
-student_bp = Blueprint('student', __name__)
+student_bp = Blueprint('student', __name__, url_prefix='/api/student')
 
 @student_bp.route('/student-profile/<user_id>', methods=['GET'])
 def student_profile(user_id):

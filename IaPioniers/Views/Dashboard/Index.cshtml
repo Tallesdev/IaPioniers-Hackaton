@@ -21,65 +21,98 @@
         <header class="top-header">
             <h1>Visão Geral</h1>
             <div class="user-info">Prof. @Model.ProfessorNome</div>
+            @if (Model.CurrentModuleInfo != null && !string.IsNullOrEmpty(Model.CurrentModuleInfo.Display_name))
+            {
+                <div class="module-info">@Model.CurrentModuleInfo.Display_name</div>
+            }
         </header>
 
         <section class="cards">
+            @* CARD 1: Atividades - Corrigido para TotalActivities *@
             <div class="card blue">
-                <h2>@Model.NumeroAtividades</h2>
+                <h2>@Model.TotalActivities</h2>
                 <p>Atividades</p>
                 <button>Ver Atividades</button>
             </div>
 
-            <div class="card image-card">
-                <img src="~/images/caderno.png" alt="Caderno" />
-                <div>
-                    <h3>Turma A</h3>
-                    <p>36 alunos</p>
-                    <button>Ver turmas</button>
+            @* CARD 2: Turma A - Dinâmico com o primeiro curso (se houver) *@
+            @if (Model.CourseSummaries != null && Model.CourseSummaries.Any())
+            {
+                var firstCourse = Model.CourseSummaries.First();
+                <div class="card image-card">
+                    <img src="~/images/caderno.png" alt="Caderno" />
+                    <div>
+                        <h3>@firstCourse.CourseName</h3> @* Nome do curso dinâmico *@
+                        <p>@firstCourse.StudentsInCourse alunos</p> @* Total de alunos no curso dinâmico *@
+                        <button>Ver turmas</button>
+                    </div>
                 </div>
-            </div>
+            }
+            else
+            {
+                <div class="card image-card">
+                    <img src="~/images/caderno.png" alt="Caderno" />
+                    <div>
+                        <h3>Nenhuma Turma</h3>
+                        <p>Nenhum aluno</p>
+                        <button>Ver turmas</button>
+                    </div>
+                </div>
+            }
 
+            @* CARD 3: Resumo das Turmas (Total de Alunos) *@
             <div class="card blue">
-                <h2>@Model.TotalAlunos</h2>
+                <h2>@Model.TotalStudents</h2>
                 <p>Resumo das Turmas</p>
                 <button>Gerar Relatório</button>
             </div>
         </section>
 
+       
+        
+
+
         <section class="recent-activities">
             <h3>Atividades Recentes</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Status</th>
-                        <th>Data</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var atividade in Model.AtividadesRecentes)
-                    {
+            @if (Model.RecentActivities != null && Model.RecentActivities.Any())
+            {
+                <table>
+                    <thead>
                         <tr>
-                            <td>@atividade.Usuario</td>
-                            <td>
-                                @if (atividade.Acao.ToLower() == "concluída")
-                                {
-                                    <span class="status concluido">Concluída</span>
-                                }
-                                else
-                                {
-                                    <span class="status andamento">@atividade.Acao</span>
-                                }
-                            </td>
-                            <td>@atividade.DataHora.ToString("dd 'de' MMMM yyyy")</td>
+                            <th>Atividade</th>
+                            <th>Aluno</th>
+                            <th>Status</th>
+                            <th>Data</th>
                         </tr>
-                    }
-
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var atividade in Model.RecentActivities)
+                        {
+                            <tr>
+                                <td>@atividade.Acao</td>
+                                <td>@atividade.Usuario</td>
+                                <td>
+                                    @if (atividade.Status != null && atividade.Status.ToLower() == "concluída")
+                                    {
+                                        <span class="status concluido">Concluída</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status andamento">@atividade.Status</span>
+                                    }
+                                </td>
+                                <td>@atividade.DataHora.ToString("dd 'de' MMMM 'às' HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>Nenhuma atividade recente disponível no módulo.</p>
+            }
         </section>
     </main>
 </div>
 
 <link rel="stylesheet" href="~/css/dashboard.css" />
-
