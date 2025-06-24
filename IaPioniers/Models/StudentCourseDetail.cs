@@ -4,7 +4,7 @@
     {
         public string courseId { get; set; }
         public string courseName { get; set; }
-        public ActibityDetail[] activities { get; set; }
+        public ActivityDetail[] activities { get; set; }
 
     }
 }

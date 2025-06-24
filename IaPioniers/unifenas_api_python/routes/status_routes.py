@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, current_app
 from datetime import datetime
 
-status_bp = Blueprint('status', __name__)
+status_bp = Blueprint('status', __name__, url_prefix='/api/status')
 
 @status_bp.route('/status', methods=['GET'])
 def get_status():

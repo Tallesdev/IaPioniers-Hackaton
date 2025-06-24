@@ -1,0 +1,333 @@
+﻿@model IaPioniers.Models.ViewModels.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard do Professor";
+}
+
+<style>
+    body {
+        font-family: 'Inter', sans-serif; /* Using Inter font as per instructions */
+        background-color: #f4f7f6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 12px; /* Rounded corners */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2, h3 {
+        color: #0056b3;
+        border-bottom: 2px solid #e0e7eb;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .summary-cards {
+        display: flex;
+        justify-content: space-around;
+        gap: 20px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+
+    .card {
+        background-color: #e9f5ff;
+        border-left: 5px solid #007bff;
+        border-radius: 8px;
+        padding: 20px;
+        flex: 1;
+        min-width: 280px; /* Increased min-width for better spacing */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.risk {
+            border-color: #dc3545;
+            background-color: #ffe9ec;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #007bff;
+            border-bottom: none; /* No border for card titles */
+        }
+
+        .card.risk h3 {
+            color: #dc3545;
+        }
+
+        .card p {
+            font-size: 2.0em; /* Slightly larger font */
+            font-weight: bold;
+            margin: 10px 0 0;
+            color: #333;
+        }
+
+    .section {
+        background-color: #f8fcfd;
+        border-radius: 10px; /* Rounded corners for sections */
+        padding: 25px; /* Increased padding */
+        margin-bottom: 30px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background-color: #ffffff;
+        border-radius: 8px; /* Rounded corners for table */
+        overflow: hidden; /* Ensures rounded corners clip content */
+    }
+
+    th, td {
+        border: 1px solid #e0e0e0;
+        padding: 15px; /* Increased padding */
+        text-align: left;
+    }
+
+    th {
+        background-color: #f0f4f7;
+        font-weight: bold;
+        color: #444;
+        text-transform: uppercase;
+        font-size: 0.9em;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f9fcff;
+    }
+
+    tr:hover {
+        background-color: #e6f7ff;
+        cursor: pointer;
+    }
+
+    .no-data {
+        color: #888;
+        text-align: center;
+        padding: 20px;
+        font-style: italic;
+    }
+
+    .module-info {
+        background-color: #d4edda;
+        border-left: 5px solid #28a745;
+        padding: 18px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        font-size: 1.15em;
+        color: #155724;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+    }
+
+        .module-info p {
+            margin: 5px 0;
+        }
+
+    .course-filter-container {
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+        .course-filter-container label {
+            font-weight: bold;
+            color: #0056b3;
+            font-size: 1.1em;
+        }
+
+        .course-filter-container select {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+            .course-filter-container select:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            }
+
+
+    /* Responsividade avançada com Tailwind-like approach for columns/flex */
+    @@media (max-width: 1024px) {
+        .dashboard-container {
+            margin: 15px;
+            padding: 15px;
+        }
+
+        .summary-cards {
+            gap: 15px;
+        }
+
+        .card {
+            min-width: unset;
+            width: calc(50% - 10px); /* Two cards per row */
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .summary-cards {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .card {
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.8em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+        }
+
+        th, td {
+            padding: 10px;
+            font-size: 0.85em;
+        }
+
+        .module-info {
+            font-size: 1em;
+            padding: 15px;
+        }
+
+        .course-filter-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+</style>
+
+<div class="dashboard-container">
+    <h1>Dashboard do Professor: @Model.ProfessorNome</h1>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+            <div class="alert alert-danger" role="alert">
+            @ViewBag.ErrorMessage
+            </div>
+    }
+    else
+    {
+            <div class="summary-cards">
+                <div class="card">
+                    <h3>Total de Alunos</h3>
+                    <p>@Model.TotalStudents</p>
+                </div>
+                <div class="card risk">
+                    <h3>Alunos em Risco</h3>
+                    <p>@Model.StudentsAtRisk</p>
+                </div>
+            @* O cartão "Atividades Registradas" foi removido daqui, conforme sua solicitação. *@
+            </div>
+
+        @if (Model.CurrentModuleInfo != null && Model.CurrentModuleInfo.Number.HasValue)
+        {
+                    <div class="section module-info">
+                        <h2>Informações do Módulo Atual</h2>
+                        <p><strong>Módulo:</strong> @Model.CurrentModuleInfo.Display_name (Módulo @Model.CurrentModuleInfo.Number)</p>
+                        <p><strong>Início:</strong> @Model.CurrentModuleInfo.Start_date</p>
+                        <p><strong>Fim:</strong> @Model.CurrentModuleInfo.End_date</p>
+                    </div>
+        }
+
+            <div class="course-filter-container">
+                <label for="courseFilter">Filtrar por Turma:</label>
+                <select id="courseFilter" onchange="filterCourseSummaries()">
+                    <option value="">Todos os Cursos</option>
+                @if (Model.CourseSummaries != null)
+                {
+                    @foreach (var course in Model.CourseSummaries.OrderBy(c => c.CourseName))
+                    {
+                                    <option value="@course.CourseName">@course.CourseName</option>
+                    }
+                }
+                </select>
+            </div>
+
+            <div class="section">
+                <h2>Resumo por Turma</h2>
+            @if (Model.CourseSummaries != null && Model.CourseSummaries.Any())
+            {
+                        <div class="table-container">
+                            <table id="courseSummaryTable">
+                                <thead>
+                                    <tr>
+                                        <th>Turma</th>
+                                        <th>Alunos na Turma</th>
+                                        <th>Alunos em Risco</th>
+                                        <th>Engajamento Médio</th>
+                                        <th>Última Atividade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                            @foreach (var course in Model.CourseSummaries)
+                            {
+                                            <tr data-course-name="@course.CourseName">
+                                                <td>@course.CourseName</td>
+                                                <td>@course.StudentsInCourse</td>
+                                                <td>@course.StudentsAtRiskInCourse</td>
+                                                <td>@course.AverageEngagementScore.ToString("F2")%</td>
+                                                <td>@course.LastActivityDate</td>
+                                            </tr>
+                            }
+                                </tbody>
+                            </table>
+                        </div>
+            }
+            else
+            {
+                        <p class="no-data">Nenhum resumo de turma disponível.</p>
+            }
+            </div>
+
+        @* A seção "Atividades Recentes" foi completamente removida daqui, conforme sua solicitação. *@
+    }
+</div>
+
+<script>
+    // Função para filtrar as linhas da tabela de resumo por turma
+    function filterCourseSummaries() {
+        const selectedCourse = document.getElementById('courseFilter').value;
+        const table = document.getElementById('courseSummaryTable');
+        if (!table) return; // Garante que a tabela existe
+
+        const rows = table.querySelectorAll('tbody tr');
+
+        rows.forEach(row => {
+            const courseName = row.getAttribute('data-course-name');
+            if (selectedCourse === "" || courseName === selectedCourse) {
+                row.style.display = ''; // Mostra a linha
+            } else {
+                row.style.display = 'none'; // Esconde a linha
+            }
+        });
+    }
+
+    // Chama a função de filtro na carga da página para aplicar a seleção inicial (se houver)
+    document.addEventListener('DOMContentLoaded', filterCourseSummaries);
+</script>
