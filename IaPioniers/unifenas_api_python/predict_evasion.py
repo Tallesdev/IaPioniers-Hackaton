@@ -1,4 +1,4 @@
-﻿# predict_evasion.py
+# predict_evasion.py
 import pandas as pd
 from datetime import datetime, timedelta
 import asyncio
