@@ -26,7 +26,6 @@ POINTS_SILENT_EVASION = 20
 # Thresholds de inatividade (em dias acadêmicos)
 INACTIVITY_THRESHOLD_GLOBAL_DAYS = 30
 INACTIVITY_THRESHOLD_COURSE_DAYS = 14
-# INACTIVITY_THRESHOLD_RECENT_VISUAL_INTERACTION_DAYS = 3 # Esta constante não está sendo usada no código, pode ser removida se não for implementada
 
 # Definindo um threshold de risco padrão para 'is_at_risk'
 DEFAULT_RISK_THRESHOLD = 30
@@ -48,11 +47,9 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
     # Crie uma cópia do DataFrame de features. Isso mantém todas as features originais
     # e permite adicionar as novas colunas de risco.
     df_risks = df_processed_features.copy()
-    # current_date = datetime.now().date() # Não usado diretamente nas regras baseadas em features de "days_since..."
 
     # Inicializa colunas de risco
     df_risks['overall_evasion_score'] = 0
-    # Inicializa 'evasion_reasons' como uma coluna de strings vazias para facilitar a concatenação
     df_risks['evasion_reasons'] = ""
     df_risks['is_at_risk'] = 0 # 0 = Não, 1 = Sim, será atualizado no final
 
@@ -72,7 +69,6 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
         if 'days_since_last_access_course' in row and pd.notna(row['days_since_last_access_course']) and \
            row['days_since_last_access_course'] >= INACTIVITY_THRESHOLD_COURSE_DAYS:
             score += POINTS_COURSE_INACTIVITY
-            # Certifique-se de que 'course_fullname' existe e não é NaN antes de usá-lo
             course_name = row.get('course_fullname', 'curso desconhecido')
             reasons_list.append(f"Inatividade em Curso: Não acessa '{course_name}' há muito tempo.")
 
@@ -128,10 +124,13 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
 
         # --- Fim das Regras de Risco ---
         
+        # Atribui o score e as razões APENAS UMA VEZ por iteração
         df_risks.at[index, 'overall_evasion_score'] = score
-        # Converte a lista de razões para uma string única, separada por '; '
-        # Garante que não haja razões duplicadas e remove strings vazias antes de juntar
         df_risks.at[index, 'evasion_reasons'] = "; ".join(sorted(filter(None, set(reasons_list))))
+
+        # O print de debug deve vir DEPOIS das atribuições finais para ver os valores corretos
+        print(f"Aluno {row['user_name']} (Curso: {row['course_fullname']}): Score = {score}, Razões: {reasons_list}")
+
 
     # Determinar se o aluno está em risco com base no threshold
     df_risks['is_at_risk'] = (df_risks['overall_evasion_score'] >= DEFAULT_RISK_THRESHOLD).astype(int)
@@ -142,5 +141,4 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
     print(f"[{datetime.now()}] Cálculo de risco de evasão concluído. Total de alunos em risco: {df_risks['is_at_risk'].sum()}")
     
     # Retorna apenas as colunas essenciais para o uso no predict_evasion.py e no app.py
-    # É CRUCIAL INCLUIR 'course_fullname' AQUI!
     return df_risks[['user_id', 'user_name', 'course_fullname', 'overall_evasion_score', 'is_at_risk', 'evasion_reasons']]
