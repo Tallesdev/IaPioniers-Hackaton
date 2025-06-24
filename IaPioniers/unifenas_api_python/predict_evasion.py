@@ -49,8 +49,8 @@ UNIFENAS_EMAIL = "hackathon@unifenas.br"
 UNIFENAS_PASSWORD = "hackathon#2025"
 
 # AJUSTES MAIS AGRESSIVOS AQUI:
-REQUEST_DELAY_SECONDS = 0.8 # Aumentado para 1.5 segundos (ou até 2.0 se necessário)
-MAX_CONCURRENT_REQUESTS = 5 # Reduzido para 2 requisições simultâneas (muito conservador, mas para testar)
+REQUEST_DELAY_SECONDS = 1 # Aumentado para 1.5 segundos (ou até 2.0 se necessário)
+MAX_CONCURRENT_REQUESTS = 4 # Reduzido para 2 requisições simultâneas (muito conservador, mas para testar)
 
 RETRY_SETTINGS = {
     'stop': stop_after_attempt(10), # Aumente mais as tentativas
@@ -234,7 +234,7 @@ async def run_evasion_prediction():
     except Exception as e:
         print(f"[{datetime.now()}] Erro ao salvar features processadas: {e}")
     # ...
-     # --- INÍCIO DO CÓDIGO A SER ADICIONADO ---
+    # --- INÍCIO DO CÓDIGO A SER ADICIONADO ---
     # Preparar as features para a previsão do modelo de ML
     # Assegura que todas as features que o modelo espera estejam presentes,
     # preenchendo com 0 se alguma estiver faltando na nova coleta de dados.
