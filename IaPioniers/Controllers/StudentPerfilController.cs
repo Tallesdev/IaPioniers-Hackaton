@@ -6,11 +6,11 @@ using Newtonsoft.Json;
 using IaPioniers.Models; // Para desserializar JSON
 // ... outros using
 
-public class StudentController : Controller
+public class StudentPerfilController : Controller
 {
     private readonly HttpClient _httpClient; // HttpClient para chamar a API Flask
 
-    public StudentController(HttpClient httpClient)
+    public StudentPerfilController(HttpClient httpClient)
     {
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri("https://localhost:7053/api/"); // Base da sua API Flask
