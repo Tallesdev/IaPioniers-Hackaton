@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATENA - {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="caminho/para/seu/style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h2>ATENA</h2>
+                <button id="sidebarToggle" class="sidebar-toggle-btn">☰</button>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="/inicio"><i class="fas fa-home"></i> Início</a></li>
+                    <li><a href="/alunos"><i class="fas fa-user-friends"></i> Alunos</a></li>
+                    <li><a href="/turmas"><i class="fas fa-users"></i> Turmas</a></li>
+                    <li><a href="/atividades"><i class="fas fa-clipboard-list"></i> Atividades</a></li>
+                    <li><a href="/configuracoes"><i class="fas fa-cog"></i> Configurações</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/sair"><i class="fas fa-sign-out-alt"></i> Sair</a>
+            </div>
+        </aside>
+
+        <main id="main-content" class="main-content">
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <h1>Visão Geral</h1>
+                </div>
+                <div class="top-bar-right">
+                    <span>Prof. Celso</span>
+                    <img src="caminho/para/sua/foto_perfil.jpg" alt="Foto Perfil" class="profile-pic">
+                </div>
+            </header>
+
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script src="caminho/para/seu/script.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+</body>
+</html>

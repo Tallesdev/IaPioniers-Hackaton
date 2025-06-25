@@ -755,8 +755,13 @@
             document.getElementById('loadingIndicator').style.display = 'block';
             document.getElementById('emailDraftTextarea').value = ''; // Limpa o textarea
 
+<<<<<<< Duda
             // Constrói o prompt para o LLM
             const prompt = `Gere um rascunho de e-mail breve e empático de um professor para o aluno(a) ${studentName}. A probabilidade de evasão dele(a) é de ${evasionProbability}%, e ele(a) não acessa a plataforma há ${daysWithoutAccess} dias. O e-mail deve expressar preocupação, oferecer suporte e gentilmente encorajá-lo(a) a se reengajar, sem soar acusatório. Mantenha o e-mail conciso e em Português do Brasil.`;
+=======
+            // Constroi o prompt para o LLM
+            const prompt = `Gere um rascunho de e-mail breve e empatico de um professor para um aluno. O nome do aluno é ${studentName}. A probabilidade de evasão dele(a) é de ${evasionProbability}%, e ele(a) não acessa a plataforma há ${daysWithoutAccess} dias. O e-mail deve expressar preocupação, oferecer suporte e gentilmente encorajá-lo(a) a se reengajar, sem soar acusatório. Mantenha o e-mail conciso e em Português do Brasil.`;
+>>>>>>> Backup-duda
 
             try {
                 // Chama a API Gemini para gerar o e-mail

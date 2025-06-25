@@ -1,3 +1,4 @@
+
 ﻿// Controllers/StudentController.cs (ou AlunoController.cs)
 
 using Microsoft.AspNetCore.Mvc;
@@ -49,4 +50,3 @@ public class StudentController : Controller
     // public IActionResult Edit(int id) { ... }
     // public IActionResult Details(int id) { ... }
     // public IActionResult Delete(int id) { ... }
-}
