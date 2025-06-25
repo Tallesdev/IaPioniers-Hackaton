@@ -1,46 +1,168 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - IaPioniers</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <title>@ViewData["Title"] - Atena</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    @* <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" /> *@
+    @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
+
     <link rel="stylesheet" href="~/IaPioniers.styles.css" asp-append-version="true" />
+
+    <style>
+        /* Estilos Reset e base */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%; /* Garante que body e html ocupem a altura total */
+            overflow-x: hidden; /* Evita scroll horizontal indesejado */
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f8f9fa; /* Cor de fundo padrão para o restante da página */
+        }
+
+        body {
+            display: flex; /* Define o body como flex container para sidebar e conteúdo */
+        }
+
+        /* Estilos da Sidebar */
+        .sidebar {
+            width: 250px; /* Largura fixa da sidebar */
+            background-color: #2c3e50; /* Cor de fundo escura */
+            color: #ecf0f1; /* Cor do texto claro */
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Espaça o header, nav e footer */
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+            position: fixed; /* Fixa a sidebar na tela */
+            height: 100vh; /* Ocupa a altura total da viewport */
+            top: 0;
+            left: 0;
+            z-index: 1000; /* Garante que fique acima de outros elementos */
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        .logo-atena {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #ecf0f1;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            flex-grow: 1;
+            padding: 0 20px;
+        }
+
+         .sidebar-nav .nav-item {
+             display: flex;
+             align-items: center;
+             padding: 15px 20px;
+             margin-bottom: 8px;
+             color: #ecf0f1;
+             text-decoration: none;
+             font-size: 1.1em;
+             border-radius: 8px;
+             transition: background-color 0.3s ease, color 0.3s ease;
+         }
+
+         .sidebar-nav .nav-item i {
+             margin-right: 15px;
+             font-size: 1.2em;
+         }
+
+         .sidebar-nav .nav-item:hover,
+         .sidebar-nav .nav-item.active {
+              background-color: #34495e;
+              color: #3498db;
+              font-weight: 500;
+         }
+
+        .sidebar-footer {
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            background-color: #e74c3c;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            font-size: 1.1em;
+        }
+
+        .logout-btn i {
+           margin-right: 10px;
+        }
+
+        .logout-btn:hover {
+           background-color: #c0392b;
+        }
+
+
+        /* Container principal do conteúdo (tudo à direita da sidebar) */
+        .main-layout-wrapper {
+            margin-left: 250px; /* Compensa a largura da sidebar fixa */
+            flex: 1; /* Ocupa todo o espaço restante horizontalmente */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Garante que este wrapper também ocupe a altura total */
+        }
+
+        /* Estilo para o conteúdo que será renderizado pela View (Dashboard/Index, etc.) */
+        .main-content-area {
+            flex: 1; /* Ocupa todo o espaço vertical disponível */
+            padding: 0; /* Removido padding para que o main-content defina */
+        }
+
+        /* Estilos para o Footer */
+        .footer {
+            width: 100%;
+            padding: 20px; /* Adicionado padding para melhor visualização */
+            text-align: center;
+            background-color: #e9ecef;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+            box-sizing: border-box; /* Garante que padding não afete a largura total */
+        }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">IaPioniers</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+    @* Inclui a barra lateral aqui *@
+    @Html.Partial("_NavHeader")
+
+    <div class="main-layout-wrapper">
+        @* Conteúdo principal das Views será renderizado aqui *@
+        <div class="main-content-area">
             @RenderBody()
-        </main>
+        </div>
+
+        <footer class="footer text-muted">
+            <div class="container">
+                &copy; 2025 - Atena - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacidade</a>
+            </div>
+        </footer>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - IaPioniers - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
