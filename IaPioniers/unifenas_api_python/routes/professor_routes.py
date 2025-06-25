@@ -171,9 +171,11 @@ def get_professor_dashboard_data():
         # --- Atividades Recentes ---
         # Removido da View, mas o modelo C# ainda o espera.
         recent_activities_data = []
-        user_ids_in_module = filtered_logs_for_professor['user_id'].unique() if not filtered_logs_for_professor.empty else []
+        # CORREÇÃO AQUI: user_ids_in_module será uma lista (se filtered_logs_for_professor estiver vazio)
+        user_ids_in_module = filtered_logs_for_professor['user_id'].unique().tolist() if not filtered_logs_for_professor.empty else []
 
-        if not df_raw_logs_cache.empty and user_ids_in_module.size > 0:
+        # CORREÇÃO AQUI: Usar len() para verificar se a lista não está vazia
+        if not df_raw_logs_cache.empty and len(user_ids_in_module) > 0: # <-- Mudança aqui
             recent_logs_for_display = df_raw_logs_cache[
                 df_raw_logs_cache['user_id'].isin(user_ids_in_module) &
                 (df_raw_logs_cache['time_dt'] >= current_module_info_start_date) &
@@ -186,31 +188,28 @@ def get_professor_dashboard_data():
                 for _, log in recent_logs_for_display.iterrows():
                     action_info = log.get('action', 'Ação Desconhecida').capitalize()
                     target_info = log.get('target', '').capitalize()
-                    user_name_info = log.get('user_name', log.get('user_id', 'Desconhecido')) # Usa 'name' ou 'user_id'
+                    user_name_info = str(log.get('user_name', log.get('user_id', 'Desconhecido'))) 
 
                     # --- Construção do Nome da Atividade ---
-                    # Combinamos 'action' e 'target' para criar um nome mais significativo
                     if target_info:
                         nome_atividade = f"{action_info} {target_info}"
                     else:
                         nome_atividade = action_info
                     
                     # Para 'Status', como a coluna 'status' não existe, usamos N/A ou inferimos algo básico de 'action'
-                    # Por enquanto, manteremos N/A a menos que você tenha uma regra específica para inferir status de 'action'
                     status_amigavel = "N/A" 
                     if action_info == "Graded":
-                        status_amigavel = "Concluída" # Exemplo: Se a ação é "graded", podemos inferir "Concluída"
+                        status_amigavel = "Concluída" 
                     elif action_info == "Submitted":
                         status_amigavel = "Submetida"
                     elif action_info == "Started":
                         status_amigavel = "Em Andamento"
-                    # Adicione mais regras se as ações permitirem inferir outros status
                     
                     recent_activities_data.append({
                         "Acao": nome_atividade,
                         "Status": status_amigavel,
                         "DataHora": log['time_dt'].isoformat(),
-                        "Usuario": user_name_info # Usamos a coluna 'name' ou 'user_id' para o nome do aluno
+                        "Usuario": user_name_info 
                     })
             else:
                 current_app.logger.debug(f"[{datetime.now()}] Nenhum log recente encontrado para exibição no módulo atual.")
@@ -219,13 +218,12 @@ def get_professor_dashboard_data():
 
         current_app.logger.debug(f"[{datetime.now()}] Atividades recentes geradas para {len(recent_activities_data)} atividades.")
 
-
         # --- Prepara e Retorna a resposta JSON final ---
         response_data = {
             "professorNome": professor_id,
             "totalStudents": total_students,
             "studentsAtRisk": students_at_risk,
-            "totalActivities": total_activities, # <<< Este campo já deve estar no seu JSON de retorno
+            "totalActivities": total_activities, 
             "currentModuleInfo": {
                 "number": current_module_info["module_number"] if current_module_info else None,
                 "start_date": current_module_info["start_date"].isoformat() if current_module_info and "start_date" in current_module_info and pd.notna(current_module_info["start_date"]) else None,
@@ -242,4 +240,5 @@ def get_professor_dashboard_data():
     except Exception as e:
         current_app.logger.error(f"[{datetime.now()}] Erro inesperado na função get_professor_dashboard_data: {e}", exc_info=True)
         return jsonify({"error": "Erro interno do servidor Flask", "details": str(e)}), 500
+
 
