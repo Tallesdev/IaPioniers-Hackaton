@@ -109,7 +109,7 @@ app.UseAuthorization();   // Habilita autorização
 // Esta rota padrão deve encontrar ProfessorDashboardController
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}"); // Alterado para Account e Login
 
 // Mapeia rotas de Razor Pages (se você as usa)
 app.MapRazorPages();
