@@ -2,9 +2,9 @@
 
 from flask import Blueprint, jsonify, request, current_app
 import pandas as pd
-from datetime import datetime, timedelta, date # Importe date também
+from datetime import datetime, timedelta, date
 import json
-from academic_calendar_utils import get_module_info_by_fixed_dates # Importa a função do seu calendário
+from academic_calendar_utils import get_module_info_by_fixed_dates
 
 professor_bp = Blueprint('professor', __name__, url_prefix='/api/professor')
 
@@ -46,8 +46,7 @@ def get_professor_dashboard_data():
 
         # --- Determinação do Módulo Atual usando academic_calendar_utils ---
         # Definindo a data atual como uma data dentro do Módulo 2 de 2025 para teste/apresentação.
-        # Ajuste esta data se precisar testar outro módulo no futuro.
-        current_date = datetime(2025, 6, 15).date() # Use .date() para compatibilidade com academic_calendar_utils
+        current_date = datetime(2025, 6, 15).date() # Use .date() para compatibilidade
         # current_date = date.today() # Para usar a data atual
 
         current_app.logger.debug(f"[{datetime.now()}] Data de referência para determinação do módulo: {current_date.strftime('%Y-%m-%d')}")
@@ -56,7 +55,6 @@ def get_professor_dashboard_data():
 
         if not current_module_info_raw:
             current_app.logger.warning(f"[{datetime.now()}] Nenhum módulo encontrado para a data {current_date.strftime('%Y-%m-%d')}. Verifique as definições em academic_calendar.py.")
-            # Retorna uma estrutura vazia, mas completa para o C#
             return jsonify({
                 "professorNome": professor_id,
                 "totalStudents": 0,
@@ -69,7 +67,6 @@ def get_professor_dashboard_data():
                 "studentEvasionList": []
             })
         
-        # Converte as datas de date para datetime para compatibilidade com os DataFrames
         current_module_info_start_date = datetime.combine(current_module_info_raw["start_date"], datetime.min.time())
         current_module_info_end_date = datetime.combine(current_module_info_raw["end_date"], datetime.max.time())
 
@@ -82,7 +79,7 @@ def get_professor_dashboard_data():
 
         current_app.logger.info(f"[{datetime.now()}] Datas de filtro do módulo ativo: Início={current_module_info_start_date}, Fim={current_module_info_end_date}")
 
-        # --- Lógica de Filtro e Cálculo de Métricas (mantida) ---
+        # --- Lógica de Filtro e Cálculo de Métricas ---
         if not pd.api.types.is_datetime64_any_dtype(df_raw_logs_cache['time_dt']):
              current_app.logger.error(f"[{datetime.now()}] 'time_dt' em df_raw_logs_cache não é datetime. Isso indica um problema no carregamento em app.py.")
              return jsonify({"error": "Erro interno: Formato de data inválido nos logs brutos."}), 500
@@ -204,34 +201,55 @@ def get_professor_dashboard_data():
 
         current_app.logger.debug(f"[{datetime.now()}] Atividades recentes geradas para {len(recent_activities_data)} atividades.")
 
-        # --- Calcular EvasionRiskCount e StudentEvasionList para o novo dashboard de evasão ---
-        evasion_risk_count = students_at_risk_df_filtered['user_id'].nunique() if not students_at_risk_df_filtered.empty else 0
-        
+        # --- CALCULAR EVASION RISK COUNT E STUDENT EVASION LIST POR CURSO ---
+        evasion_risk_count = 0 # Inicializa como 0, será calculado por curso
         student_evasion_list = []
-        if not students_at_risk_df_filtered.empty and not df_features_cache.empty:
-            merged_evasion_data = pd.merge(
-                students_at_risk_df_filtered[['user_id', 'user_name', 'evasion_probability_ml']],
-                df_features_cache[['user_id', 'course_fullname', 'overall_last_access_days_ago', 'course_activity_count']],
-                on='user_id',
+
+        if not df_risk_scores_cache.empty and not df_features_cache.empty:
+            # Filtra scores de risco e features para os cursos do professor e alunos logados no módulo
+            risk_scores_for_professor_courses = df_risk_scores_cache[
+                df_risk_scores_cache['course_fullname'].isin(professor_courses) &
+                df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())
+            ].copy()
+
+            features_for_professor_courses = df_features_cache[
+                df_features_cache['course_fullname'].isin(professor_courses) &
+                df_features_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())
+            ].copy()
+            
+            # Atualiza evasion_risk_count com base nos alunos em risco filtrados
+            evasion_risk_count = risk_scores_for_professor_courses[risk_scores_for_professor_courses['is_at_risk'] == 1]['user_id'].nunique()
+
+            # Junta os dados de risco e features para calcular as métricas por aluno E por curso
+            # Se um aluno está em múltiplos cursos e tem risco, ele aparecerá múltiplas vezes aqui.
+            merged_evasion_data_per_course = pd.merge(
+                risk_scores_for_professor_courses[['user_id', 'user_name', 'course_fullname', 'evasion_probability_ml', 'is_at_risk']],
+                features_for_professor_courses[['user_id', 'course_fullname', 'overall_last_access_days_ago', 'course_activity_count']],
+                on=['user_id', 'course_fullname'], # Chave de junção dupla
                 how='inner' 
             )
-            merged_evasion_data = merged_evasion_data.groupby('user_id').agg(
-                user_name=('user_name', 'first'),
-                evasion_probability=('evasion_probability_ml', 'max'),
-                days_without_access=('overall_last_access_days_ago', 'max'), 
-                total_accesses=('course_activity_count', 'sum') 
-            ).reset_index()
+            
+            # Filtra apenas os alunos em risco para a lista de exibição
+            students_at_risk_per_course_for_list = merged_evasion_data_per_course[
+                merged_evasion_data_per_course['is_at_risk'] == 1
+            ]
 
+            if not students_at_risk_per_course_for_list.empty:
+                # Ordena pela probabilidade de evasão (desc) e depois pelo nome do aluno
+                students_at_risk_per_course_for_list = students_at_risk_per_course_for_list.sort_values(
+                    by=['evasion_probability_ml', 'user_name'], ascending=[False, True]
+                )
 
-            for _, student_row in merged_evasion_data.iterrows():
-                student_evasion_list.append({
-                    "StudentName": student_row['user_name'],
-                    "TotalAccesses": int(student_row['total_accesses']),
-                    "DaysWithoutAccess": int(student_row['days_without_access']),
-                    "EvasionProbability": int(round(student_row['evasion_probability'] * 100)) 
-                })
+                for _, student_row in students_at_risk_per_course_for_list.iterrows():
+                    student_evasion_list.append({
+                        "StudentName": student_row['user_name'],
+                        "CourseName": student_row['course_fullname'], # Agora inclui o nome do curso
+                        "TotalAccesses": int(student_row['course_activity_count']), # Acessos DENTRO DESTE CURSO
+                        "DaysWithoutAccess": int(student_row['overall_last_access_days_ago']), # Dias sem acesso (geral, ou adaptar se precisar por curso)
+                        "EvasionProbability": int(round(student_row['evasion_probability_ml'] * 100))
+                    })
         
-        current_app.logger.debug(f"[{datetime.now()}] Alunos em risco para lista de evasão: {len(student_evasion_list)}")
+        current_app.logger.debug(f"[{datetime.now()}] Alunos em risco para lista de evasão (por curso): {len(student_evasion_list)}")
 
         # --- Prepara e Retorna a resposta JSON final ---
         response_data = {
