@@ -23,23 +23,26 @@ namespace IaPioniers.Controllers
             _logger = logger;
         }
 
-        // Action para exibir o dashboard principal do professor (seu Index original)
+        // Action para exibir o dashboard principal do professor (agora o "Resumo de Dados")
         [HttpGet("/ProfessorDashboard")]
         public async Task<IActionResult> Index([FromQuery] string professorId)
         {
-            _logger.LogInformation($"Requisição recebida para Dashboard do Professor com ID: '{professorId}'");
+            _logger.LogInformation($"Requisição recebida para Dashboard do Professor (Index) com ID: '{professorId}'");
             string requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
             var errorModel = new ErrorViewModel { RequestId = requestId };
 
+            // Usar um professorId padrão se não fornecido para fins de teste
             if (string.IsNullOrEmpty(professorId))
             {
-                _logger.LogWarning("ID do professor não fornecido na URL da requisição.");
-                ViewBag.ErrorMessage = "ID do professor não fornecido. Por favor, especifique um ID de professor na URL.";
-                return View("Error", errorModel);
+                professorId = "João Silva"; // Ou "Prof. Celso" para o protótipo
+                _logger.LogInformation($"ID do professor não fornecido, usando padrão: '{professorId}'.");
             }
 
             try
             {
+                // Chama o serviço para obter os dados do dashboard do professor
+                // Assumimos que GetProfessorDashboardDataAsync agora retorna o DashboardViewModel
+                // com TODOS os campos necessários, incluindo EvasionRiskCount e StudentEvasionList
                 var dashboardData = await _dashboardService.GetProfessorDashboardDataAsync(professorId);
 
                 if (dashboardData == null)
@@ -49,7 +52,7 @@ namespace IaPioniers.Controllers
                     return View("Error", errorModel);
                 }
 
-                _logger.LogInformation($"Dados do dashboard obtidos com sucesso para o professor: {professorId}. Renderizando View.");
+                _logger.LogInformation($"Dados do dashboard obtidos com sucesso para o professor: {professorId}. Renderizando View 'Index'.");
                 return View(dashboardData);
             }
             catch (HttpRequestException httpEx)
@@ -72,45 +75,21 @@ namespace IaPioniers.Controllers
             }
         }
 
-        // NOVA AÇÃO: Para exibir o dashboard "Resumo de Dados"
+        // Ação /ProfessorDashboard/ResumoDeDados será removida ou adaptada se necessário
+        // Se você não precisa mais dela, pode removê-la para evitar duplicação.
+        /*
         [HttpGet("/ProfessorDashboard/ResumoDeDados")]
         public IActionResult ResumoDeDados([FromQuery] string professorId)
         {
-            _logger.LogInformation($"Requisição recebida para Resumo de Dados do Professor com ID: '{professorId}'");
-
-            // Crie um ViewModel com dados de exemplo (ou obtenha de um serviço real)
-            var viewModel = new DashboardViewModel // Ou um ViewModel mais específico como ResumoDeDadosViewModel
-            {
-                ProfessorNome = professorId ?? "Desconhecido", // Use o ID ou um fallback
-                EvasionRiskCount = 10, // Dados de exemplo conforme o protótipo
-                CourseSummaries = new List<CourseSummaryViewModel>
-                {
-                    new CourseSummaryViewModel { CourseName = "Turma A", StudentsInCourse = 30, StudentsAtRiskInCourse = 5, AverageEngagementScore = 85.5m, LastActivityDate = "2025-06-20" },
-                    new CourseSummaryViewModel { CourseName = "Turma B", StudentsInCourse = 25, StudentsAtRiskInCourse = 2, AverageEngagementScore = 92.1m, LastActivityDate = "2025-06-22" }
-                },
-                StudentEvasionList = new List<StudentEvasionInfoViewModel> // Preencher com os dados da tabela
-                {
-                    new StudentEvasionInfoViewModel { StudentName = "Ana Paula Veronezi", TotalAccesses = 18, DaysWithoutAccess = 2, EvasionProbability = 10 },
-                    new StudentEvasionInfoViewModel { StudentName = "Geovana Fernandes", TotalAccesses = 14, DaysWithoutAccess = 6, EvasionProbability = 30 },
-                    new StudentEvasionInfoViewModel { StudentName = "Gabrielle Souza", TotalAccesses = 5, DaysWithoutAccess = 15, EvasionProbability = 75 },
-                    new StudentEvasionInfoViewModel { StudentName = "Hiago Augusto Pereira", TotalAccesses = 18, DaysWithoutAccess = 2, EvasionProbability = 10 },
-                    new StudentEvasionInfoViewModel { StudentName = "Maria Eduarda Marques", TotalAccesses = 16, DaysWithoutAccess = 4, EvasionProbability = 20 },
-                    new StudentEvasionInfoViewModel { StudentName = "Talles Gabriel", TotalAccesses = 8, DaysWithoutAccess = 12, EvasionProbability = 60 }
-                }
-            };
-
-            // Retorna a view "ResumoDeDados.cshtml" com o ViewModel
-            return View("ResumoDeDados", viewModel);
+            // Esta ação agora é redundante se o Index exibir o mesmo conteúdo
+            // Se precisar de uma tela separada, reavalie a necessidade e os dados.
+            _logger.LogInformation($"Requisição para Resumo de Dados (separado) para professor: {professorId}.");
+            return View("ResumoDeDados", new DashboardViewModel { ProfessorNome = professorId });
         }
+        */
     }
 
-    // Adicione esta classe se ela ainda não existir no seu projeto (geralmente em Models/ViewModels)
-    // Se você já tem StudentEvasionInfoViewModel em outro lugar, não duplique.
-    public class StudentEvasionInfoViewModel
-    {
-        public string StudentName { get; set; }
-        public int TotalAccesses { get; set; }
-        public int DaysWithoutAccess { get; set; }
-        public int EvasionProbability { get; set; } // 0-100
-    }
+    // A classe StudentEvasionInfoViewModel já deve estar definida em Models/ViewModels/DashboardViewModel.cs
+    // Se não estiver, certifique-se de que está lá e não duplique aqui.
+    // public class StudentEvasionInfoViewModel { ... }
 }
