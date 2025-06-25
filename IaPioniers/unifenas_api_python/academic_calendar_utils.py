@@ -15,11 +15,10 @@ THRESHOLD_RECENT_VISUAL_INTERACTION_DAYS = 3
 _FIXED_MODULE_BOUNDARIES = {
     2025: [
         {"module_number": 1, "start_date": date(2025, 3, 11), "end_date": date(2025, 5, 4)},
-        {"module_number": 2, "start_date": date(2025, 5, 5), "end_date": date(2025, 6, 24)},
+        {"module_number": 2, "start_date": date(2025, 5, 5), "end_date": date(2025, 6, 28)}, # <-- OK, termina em 28 de junho!
         {"module_number": 3, "start_date": date(2025, 8, 1), "end_date": date(2025, 9, 27)},
         {"module_number": 4, "start_date": date(2025, 9, 28), "end_date": date(2025, 11, 24)},
     ]
-    # Adicione outros anos conforme necessário
 }
 
 

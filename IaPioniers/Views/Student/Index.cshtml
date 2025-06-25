@@ -1,0 +1,74 @@
+﻿@* Views/Student/Index.cshtml (ou Aluno/Index.cshtml) *@
+
+@model List<string> 
+@* Por enquanto, recebemos uma lista de strings. No futuro, será List<AlunoModel> *@
+
+@{
+    ViewData["Title"] = "Alunos"; // Garante o título da página
+}
+
+<div class="main-content">
+    <div class="top-header">
+        <h1>Alunos</h1>
+        <div class="user-profile">
+            <span class="user-name">Prof. João Silva</span>
+            <img src="https://via.placeholder.com/50" alt="User Avatar" class="user-avatar" />
+        </div>
+    </div>
+
+    <div class="page-tools">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" placeholder="Pesquisar aluno..." class="search-input" />
+        </div>
+        <a asp-controller="Student" asp-action="Add" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Adicionar Novo Aluno
+        </a>
+    </div>
+
+    <div class="data-table-container">
+        <h3>Lista de Alunos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Turma</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var studentName in Model)
+                    {
+                        <tr>
+                            <td>@studentName</td>
+                            <td>@($"{studentName.ToLower().Replace(" ", ".")}@email.com")</td> @* E-mail mock *@
+                            <td>Turma A</td> @* Turma mock *@
+                            <td><span class="status-dot status-andamento"></span>Ativo</td> @* Status mock *@
+                            <td>
+                                <button class="action-btn edit-btn" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete-btn" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="no-data-message">Nenhum aluno cadastrado.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Scripts específicos para a tela de alunos, se necessário
+        // Ex: funcionalidade de busca dinâmica, modais, etc.
+    </script>
+}

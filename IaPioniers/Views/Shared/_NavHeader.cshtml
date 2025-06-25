@@ -1,0 +1,110 @@
+﻿@* Views/Shared/_NavHeader.cshtml *@
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h2 class="logo-atena">ATENA</h2>
+    </div>
+    <nav class="sidebar-nav">
+        @{
+            var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        }
+        <a href="/Dashboard/index" class="nav-item @(currentController == "Dashboard" ? "active" : "")"><i class="fas fa-home"></i> Início</a>
+        <a href="/Student" class="nav-item @(currentController == "Student" ? "active" : "")"><i class="fas fa-user-graduate"></i> Alunos</a>
+        <a href="/Class" class="nav-item @(currentController == "Class" ? "active" : "")"><i class="fas fa-users"></i> Turmas</a>
+        <a href="/Activity" class="nav-item @(currentController == "Activity" ? "active" : "")"><i class="fas fa-tasks"></i> Atividades</a>
+        <a href="/Settings" class="nav-item @(currentController == "Settings" ? "active" : "")"><i class="fas fa-cog"></i> Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="#" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</a>
+    </div>
+</aside>
+
+
+<style>
+    /* Estilos para a barra lateral (sidebar) */
+    .sidebar {
+        width: 250px; /* Largura fixa da sidebar */
+        background-color: #2c3e50; /* Cor de fundo escura */
+        color: #ecf0f1; /* Cor do texto claro */
+        padding: 20px 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* Espaça o header, nav e footer */
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+        position: fixed; /* Fixa a sidebar na tela */
+        height: 100vh; /* Ocupa a altura total da viewport */
+        top: 0;
+        left: 0;
+        z-index: 1000; /* Garante que fique acima de outros elementos */
+    }
+
+    .sidebar-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 0 20px;
+    }
+
+    .logo-atena {
+        font-size: 2.5em; /* Tamanho do logo "ATENA" */
+        font-weight: 700;
+        color: #ecf0f1; /* Cor do logo */
+        letter-spacing: 2px;
+        margin: 0;
+    }
+
+    .sidebar-nav {
+        flex-grow: 1; /* Permite que a navegação ocupe o espaço restante */
+        padding: 0 20px;
+    }
+
+        .sidebar-nav .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            margin-bottom: 8px;
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 1.1em;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+            .sidebar-nav .nav-item i {
+                margin-right: 15px; /* Espaço entre o ícone e o texto */
+                font-size: 1.2em;
+            }
+
+            .sidebar-nav .nav-item:hover,
+            .sidebar-nav .nav-item.active {
+                background-color: #34495e; /* Fundo mais claro no hover/ativo */
+                color: #3498db; /* Cor de destaque para o texto e ícone */
+                font-weight: 500;
+            }
+
+    .sidebar-footer {
+        padding: 20px;
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logout-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center; /* Centraliza o ícone e texto */
+        padding: 12px 20px;
+        background-color: #e74c3c; /* Vermelho para sair */
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+        font-size: 1.1em;
+    }
+
+        .logout-btn i {
+            margin-right: 10px;
+        }
+
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
+</style>
