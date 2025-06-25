@@ -26,10 +26,9 @@ POINTS_SILENT_EVASION = 20
 # Thresholds de inatividade (em dias acadêmicos)
 INACTIVITY_THRESHOLD_GLOBAL_DAYS = 30
 INACTIVITY_THRESHOLD_COURSE_DAYS = 14
-# INACTIVITY_THRESHOLD_RECENT_VISUAL_INTERACTION_DAYS = 3 # Esta constante não está sendo usada no código, pode ser removida se não for implementada
 
 # Definindo um threshold de risco padrão para 'is_at_risk'
-DEFAULT_RISK_THRESHOLD = 30
+DEFAULT_RISK_THRESHOLD = 15
 
 # --- FUNÇÕES DE CÁLCULO DE RISCO ---
 
@@ -48,11 +47,9 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
     # Crie uma cópia do DataFrame de features. Isso mantém todas as features originais
     # e permite adicionar as novas colunas de risco.
     df_risks = df_processed_features.copy()
-    # current_date = datetime.now().date() # Não usado diretamente nas regras baseadas em features de "days_since..."
 
     # Inicializa colunas de risco
     df_risks['overall_evasion_score'] = 0
-    # Inicializa 'evasion_reasons' como uma coluna de strings vazias para facilitar a concatenação
     df_risks['evasion_reasons'] = ""
     df_risks['is_at_risk'] = 0 # 0 = Não, 1 = Sim, será atualizado no final
 
@@ -63,20 +60,22 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
 
         # Regras de Risco (BASEADAS NAS FEATURES)
         # 1. Inatividade Global (muito tempo sem acessar o Moodle)
+        print(f"Debug: Aluno {row.get('user_name', 'N/A')}, Curso: {row.get('course_fullname', 'N/A')}, days_since_last_access_global: {row.get('days_since_last_access_global', 'N/A')}, Threshold: {INACTIVITY_THRESHOLD_GLOBAL_DAYS}")
         if 'days_since_last_access_global' in row and pd.notna(row['days_since_last_access_global']) and \
            row['days_since_last_access_global'] >= INACTIVITY_THRESHOLD_GLOBAL_DAYS:
             score += POINTS_GLOBAL_INACTIVITY
             reasons_list.append("Inatividade Global: Não acessa o Moodle globalmente há muito tempo.")
 
         # 2. Inatividade em Cursos Específicos
+        print(f"Debug: days_since_last_access_course: {row.get('days_since_last_access_course', 'N/A')}, Threshold: {INACTIVITY_THRESHOLD_COURSE_DAYS}")
         if 'days_since_last_access_course' in row and pd.notna(row['days_since_last_access_course']) and \
            row['days_since_last_access_course'] >= INACTIVITY_THRESHOLD_COURSE_DAYS:
             score += POINTS_COURSE_INACTIVITY
-            # Certifique-se de que 'course_fullname' existe e não é NaN antes de usá-lo
             course_name = row.get('course_fullname', 'curso desconhecido')
             reasons_list.append(f"Inatividade em Curso: Não acessa '{course_name}' há muito tempo.")
 
         # 3. Baixas Interações Globais (poucas ações totais no Moodle)
+        print(f"Debug [Baixas Interações Globais]: total_actions_global = {row.get('total_actions_global', 'N/A')}, days_since_last_access_global = {row.get('days_since_last_access_global', 'N/A')}, Threshold Inatividade: {INACTIVITY_THRESHOLD_GLOBAL_DAYS}")
         if 'total_actions_global' in row and pd.notna(row['total_actions_global']) and \
            'days_since_last_access_global' in row and pd.notna(row['days_since_last_access_global']):
             if row['total_actions_global'] < 50 and row['days_since_last_access_global'] < INACTIVITY_THRESHOLD_GLOBAL_DAYS:
@@ -84,6 +83,8 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
                 reasons_list.append("Baixas Interações Globais: Poucas ações totais no Moodle.")
 
         # 4. Baixas Interações em Cursos Específicos
+         # Atenção: Esta regra verifica se as ações são BAIXAS E se a inatividade NO CURSO é BAIXA
+        print(f"Debug [Baixas Interações Curso]: course_total_actions = {row.get('course_total_actions', 'N/A')}, days_since_last_access_course = {row.get('days_since_last_access_course', 'N/A')}, Threshold Inatividade: {INACTIVITY_THRESHOLD_COURSE_DAYS}")
         if 'course_total_actions' in row and pd.notna(row['course_total_actions']) and \
            'days_since_last_access_course' in row and pd.notna(row['days_since_last_access_course']):
             if row['course_total_actions'] < 10 and row['days_since_last_access_course'] < INACTIVITY_THRESHOLD_COURSE_DAYS:
@@ -92,16 +93,19 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
                 reasons_list.append(f"Baixas Interações em Curso: Poucas ações em '{course_name}'.")
         
         # 5. Ausência de Interação em Fóruns
+        print(f"Debug [No Forum Activity]: global_forum_posts_count = {row.get('global_forum_posts_count', 'N/A')}")
         if 'global_forum_posts_count' in row and pd.notna(row['global_forum_posts_count']) and row['global_forum_posts_count'] == 0:
             score += POINTS_NO_FORUM_ACTIVITY
             reasons_list.append("Ausência de Atividade em Fóruns: Nenhuma postagem global no Moodle.")
 
         # 6. Ausência de Interação em Quizzes/Provas
+        print(f"Debug [No Quiz Activity]: global_quiz_attempts_count = {row.get('global_quiz_attempts_count', 'N/A')}")
         if 'global_quiz_attempts_count' in row and pd.notna(row['global_quiz_attempts_count']) and row['global_quiz_attempts_count'] == 0:
             score += POINTS_NO_QUIZ_ACTIVITY
             reasons_list.append("Ausência de Atividade em Quizzes/Provas: Nenhuma tentativa global no Moodle.")
 
         # 7. Ausência de Submissão na Primeira Atividade/Ciclo
+        print(f"Debug [No First Activity Submission]: is_in_first_activity_cycle_no_submission = {row.get('is_in_first_activity_cycle_no_submission', 'N/A')}")
         if 'is_in_first_activity_cycle_no_submission' in row and pd.notna(row['is_in_first_activity_cycle_no_submission']) and \
            row['is_in_first_activity_cycle_no_submission']:
             score += POINTS_NO_FIRST_ACTIVITY_SUBMISSION
@@ -114,6 +118,7 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
                 reasons_list.append(f"Alto Risco: Sem submissão e sem interação visual recente em '{course_name}'.")
 
         # 8. Baixo Engajamento com Tipos de Recurso
+        print(f"Debug [Low Resource Engagement]: unique_resource_types_accessed_course = {row.get('unique_resource_types_accessed_course', 'N/A')}")
         if 'unique_resource_types_accessed_course' in row and pd.notna(row['unique_resource_types_accessed_course']) and \
            row['unique_resource_types_accessed_course'] < 3:
             score += POINTS_LOW_RESOURCE_ENGAGEMENT
@@ -121,6 +126,7 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
             reasons_list.append(f"Baixo Engajamento com Recursos: Poucos tipos de conteúdo acessados em '{course_name}'.")
 
         # 9. Evasão Silenciosa (tendência de queda na atividade global)
+        print(f"Debug [Silent Evasion]: has_falling_trend_90_days = {row.get('has_falling_trend_90_days', 'N/A')}")
         if 'has_falling_trend_90_days' in row and pd.notna(row['has_falling_trend_90_days']) and \
            row['has_falling_trend_90_days']:
             score += POINTS_SILENT_EVASION
@@ -128,10 +134,13 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
 
         # --- Fim das Regras de Risco ---
         
+        # Atribui o score e as razões APENAS UMA VEZ por iteração
         df_risks.at[index, 'overall_evasion_score'] = score
-        # Converte a lista de razões para uma string única, separada por '; '
-        # Garante que não haja razões duplicadas e remove strings vazias antes de juntar
         df_risks.at[index, 'evasion_reasons'] = "; ".join(sorted(filter(None, set(reasons_list))))
+
+        # O print de debug deve vir DEPOIS das atribuições finais para ver os valores corretos
+        print(f"Aluno {row['user_name']} (Curso: {row['course_fullname']}): Score = {score}, Razões: {reasons_list}")
+
 
     # Determinar se o aluno está em risco com base no threshold
     df_risks['is_at_risk'] = (df_risks['overall_evasion_score'] >= DEFAULT_RISK_THRESHOLD).astype(int)
@@ -142,5 +151,4 @@ def calculate_evasion_risk_scores(df_processed_features: pd.DataFrame) -> pd.Dat
     print(f"[{datetime.now()}] Cálculo de risco de evasão concluído. Total de alunos em risco: {df_risks['is_at_risk'].sum()}")
     
     # Retorna apenas as colunas essenciais para o uso no predict_evasion.py e no app.py
-    # É CRUCIAL INCLUIR 'course_fullname' AQUI!
     return df_risks[['user_id', 'user_name', 'course_fullname', 'overall_evasion_score', 'is_at_risk', 'evasion_reasons']]
