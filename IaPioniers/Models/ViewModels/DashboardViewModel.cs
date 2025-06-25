@@ -2,10 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-
-using IaPioniers.Controllers;
-using Newtonsoft.Json; // Certifique-se de ter o pacote Newtonsoft.Json instalado no seu projeto C#
-
+using Newtonsoft.Json;
 
 namespace IaPioniers.Models.ViewModels
 {
@@ -31,8 +28,6 @@ namespace IaPioniers.Models.ViewModels
 
         [JsonProperty("recentActivities")]
         public List<RecentActivityViewModel> RecentActivities { get; set; }
-        public int EvasionRiskCount { get; internal set; }
-        public List<StudentEvasionInfoViewModel> StudentEvasionList { get; internal set; }
 
         [JsonProperty("evasionRiskCount")]
         public int EvasionRiskCount { get; set; }
