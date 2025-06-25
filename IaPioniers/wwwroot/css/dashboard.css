@@ -395,51 +395,6 @@
         box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
     }
 
-/* Estilos para o container da tabela (reutilizando da seção de atividades recentes) */
-.data-table-container {
-    background-color: #fff;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    /* Removido margin-top, pois page-tools já fornece espaço */
-}
-
-    .data-table-container h3 {
-        font-size: 1.8em;
-        color: #34495e;
-        margin-bottom: 25px;
-        font-weight: 600;
-    }
-
-    .data-table-container table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .data-table-container th,
-    .data-table-container td {
-        padding: 15px;
-        text-align: left;
-        border-bottom: 1px solid #eee; /* Linhas de grade suaves */
-    }
-
-    .data-table-container th {
-        background-color: #f2f4f6; /* Fundo suave para o cabeçalho da tabela */
-        color: #555;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.95em;
-    }
-
-    .data-table-container td {
-        color: #666;
-        font-size: 1em;
-    }
-
-    .data-table-container tbody tr:hover {
-        background-color: #fcfcfc; /* Leve destaque no hover da linha */
-    }
-
 /* Mensagem de "Nenhum dado" na tabela */
 .no-data-message {
     text-align: center;
@@ -494,27 +449,280 @@
         width: 100%; /* Botão ocupa a largura total */
         justify-content: center; /* Centraliza conteúdo do botão */
     }
-
-    /* Ajustes para a tabela em telas pequenas */
-    .data-table-container {
-        padding: 20px;
-    }
-
-        .data-table-container th,
-        .data-table-container td {
-            padding: 10px;
-            font-size: 0.9em;
-        }
+        
 }
 
-@media (max-width: 480px) {
-    .data-table-container th,
-    .data-table-container td {
-        padding: 8px;
-        font-size: 0.85em;
-    }
-    /* Pode ser necessário esconder algumas colunas para mobile
-       Ex: .data-table-container th:nth-child(3),
-           .data-table-container td:nth-child(3) { display: none; }
-    */
+
+
+.filter-tools {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 20px; /* Espaçamento entre o dropdown e a busca */
+    flex-wrap: wrap; /* Para responsividade */
 }
+
+/* Estilos para o dropdown de turma */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.form-select { /* Estilo do select box */
+    padding: 10px 40px 10px 15px; /* Mais padding à direita para o ícone */
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fff;
+    font-size: 1em;
+    color: #34495e;
+    appearance: none; /* Remove o estilo padrão do navegador para o dropdown */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    min-width: 180px; /* Largura mínima para o dropdown */
+}
+
+    .form-select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+
+.dropdown-icon { /* Ícone de seta para o dropdown */
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #7f8c8d;
+    pointer-events: none; /* Garante que o clique passe para o select */
+}
+
+/* Estilos para a caixa de pesquisa de aluno (reusando e ajustando) */
+.search-box {
+    display: flex;
+    align-items: center;
+    flex-grow: 1; /* Permite que cresça e ocupe espaço restante */
+    max-width: 350px; /* Largura máxima para a busca */
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 10px 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e0e0e0;
+}
+
+.search-input {
+    border: none;
+    outline: none;
+    flex-grow: 1;
+    padding: 5px 0;
+    font-size: 1em;
+    color: #34495e;
+}
+
+    .search-input::placeholder {
+        color: #bdc3c7;
+    }
+
+.search-icon {
+    color: #7f8c8d;
+    margin-left: 10px; /* Ícone agora à direita do input */
+    font-size: 1.1em;
+}
+
+/* Responsividade para filter-tools */
+@media (max-width: 768px) {
+    .filter-tools {
+        flex-direction: column; /* Empilha os elementos */
+        align-items: flex-start; /* Alinha à esquerda */
+        gap: 15px;
+    }
+
+    .dropdown-container,
+    .search-box {
+        width: 100%; /* Ocupa a largura total */
+        max-width: 100%; /* Garante que não exceda */
+    }
+
+    .form-select {
+        width: 100%;
+    }
+}
+
+.student-list-header {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.2fr; /* Colunas para Nome, Status, Entregas. Ajuste conforme necessário. */
+    gap: 20px;
+    background-color: #f2f4f6; /* Fundo do cabeçalho */
+    padding: 15px 30px; /* Padding do cabeçalho */
+    border-radius: 10px; /* Bordas arredondadas para o cabeçalho */
+    margin-bottom: 20px; /* Espaço abaixo do cabeçalho */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Sombra suave */
+}
+
+    .student-list-header h3 {
+        font-size: 1.1em; /* Tamanho do texto do cabeçalho */
+        color: #555;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin: 0; /* Remover margens padrão */
+    }
+
+/* Container principal para a grade de cards de alunos */
+.student-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Por padrão, uma coluna em telas menores */
+    gap: 15px; /* Espaço entre os cards */
+    padding-bottom: 30px; /* Espaço na parte inferior, se necessário */
+}
+
+/* Estilo para cada card de aluno individual */
+.student-card {
+    background-color: #fff;
+    border-radius: 12px; /* Bordas arredondadas */
+    padding: 20px 30px; /* Padding interno */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Sombra mais destacada */
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.2fr; /* Colunas para info, status, entrega */
+    align-items: center; /* Alinha verticalmente os itens no centro */
+    gap: 20px; /* Espaço entre as colunas do card */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .student-card:hover {
+        transform: translateY(-3px); /* Efeito de levantar no hover */
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+
+/* Seção de informações do aluno (avatar e nome) */
+.student-info {
+    display: flex;
+    align-items: center;
+}
+
+.student-avatar {
+    width: 45px; /* Tamanho do avatar */
+    height: 45px;
+    border-radius: 50%; /* Circular */
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid #e0e0e0; /* Borda suave */
+}
+
+.student-name {
+    font-weight: 600;
+    color: #34495e;
+    font-size: 1.1em;
+}
+
+/* Estilos para a exibição de status do aluno */
+.student-status-display {
+    display: flex;
+    align-items: center;
+    font-size: 1em;
+    font-weight: 500;
+}
+
+    .student-status-display i {
+        margin-right: 8px;
+        font-size: 1.2em; /* Tamanho do ícone */
+    }
+
+/* Cores dos textos de status */
+.status-participando {
+    color: #27ae60; /* Verde */
+}
+
+.status-inativo {
+    color: #e74c3c; /* Vermelho */
+}
+
+.status-atrasado {
+    color: #f39c12; /* Laranja */
+}
+
+/* Estilos para a exibição de entregas recentes */
+.student-delivery-display {
+    display: flex;
+    align-items: center;
+    font-size: 1em;
+    font-weight: 500;
+    color: #666;
+}
+
+    .student-delivery-display i {
+        margin-right: 8px;
+        font-size: 1.2em; /* Tamanho do ícone */
+        color: #7f8c8d; /* Cor do ícone de entrega */
+    }
+
+.no-data-message {
+    text-align: center;
+    padding: 30px;
+    color: #7f8c8d;
+    font-style: italic;
+    grid-column: 1 / -1; /* Ocupa todas as colunas na grade */
+}
+
+
+/* RESPONSIVIDADE PARA A TELA DE ALUNOS */
+@media (max-width: 992px) { /* Em tablets, os cards podem ter 2 colunas */
+    .student-cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .student-card {
+        grid-template-columns: 1fr; /* Empilha o conteúdo em telas menores */
+        text-align: center;
+        justify-items: center; /* Centraliza itens no grid */
+    }
+
+    .student-list-header {
+        display: none; /* Esconde o cabeçalho da lista em telas menores, se os cards já forem auto-explicativos */
+    }
+
+    .student-info,
+    .student-status-display,
+    .student-delivery-display {
+        flex-direction: column; /* Empilha ícone e texto */
+        align-items: center; /* Centraliza verticalmente */
+        text-align: center;
+    }
+
+    .student-avatar {
+        margin-right: 0;
+        margin-bottom: 10px; /* Espaço abaixo do avatar */
+    }
+
+    .student-status-display i,
+    .student-delivery-display i {
+        margin-right: 0;
+        margin-bottom: 5px; /* Espaço abaixo do ícone */
+    }
+}
+
+@media (max-width: 576px) { /* Em celulares, os cards voltam a uma coluna */
+    .student-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .student-card {
+        padding: 15px 20px;
+    }
+
+    .student-avatar {
+        width: 40px;
+        height: 40px;
+    }
+
+    .student-name {
+        font-size: 1em;
+    }
+
+    .student-status-display,
+    .student-delivery-display {
+        font-size: 0.95em;
+    }
+}
+
