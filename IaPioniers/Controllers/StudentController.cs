@@ -1,46 +1,52 @@
-﻿// Controllers/StudentController.cs
+
+﻿// Controllers/StudentController.cs (ou AlunoController.cs)
+
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using IaPioniers.Models; // Para desserializar JSON
-// ... outros using
+using System.Collections.Generic; // Para usar List<string> ou uma lista de objetos Aluno
+// using Atena.Models; // Descomente se você já tiver um modelo Aluno
 
 public class StudentController : Controller
 {
-    private readonly HttpClient _httpClient; // HttpClient para chamar a API Flask
-
-    public StudentController(HttpClient httpClient)
+    // Ação para exibir a lista de alunos
+    public IActionResult Index()
     {
-        _httpClient = httpClient;
-        _httpClient.BaseAddress = new Uri("https://localhost:7053/api/"); // Base da sua API Flask
+        ViewData["Title"] = "Alunos"; // Define o título da página
+
+        // Aqui você buscaria seus alunos do banco de dados.
+        // Por enquanto, vamos usar uma lista mock para simular dados.
+        var students = new List<string>
+        {
+            "Ana Silva",
+            "Bruno Mendes",
+            "Carla Costa",
+            "Daniel Pereira",
+            "Mariana Almeida"
+        };
+
+        // Você passaria um modelo mais complexo para a View no futuro,
+        // por exemplo, List<AlunoModel>
+        return View(students);
     }
 
-    [HttpGet("PerfilAluno/{userId}")] // Rota para esta ação
-    public async Task<IActionResult> PerfilAluno(string userId)
+    // Ação para exibir o formulário de adição de aluno
+    public IActionResult Add()
     {
-        try
-        {
-            // Chama o endpoint da sua API Flask
-            HttpResponseMessage response = await _httpClient.GetAsync($"student/student-profile/{userId}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                // Supondo que você tenha uma classe modelo para os dados do aluno
-                var studentProfile = JsonConvert.DeserializeObject<StudentProfile>(jsonResponse);
-                return View(studentProfile); // Passa o modelo para a view PerfilAluno.cshtml
-            }
-            else
-            {
-                // Lidar com erros da API Flask
-                return View("Error"); // Ou passar uma mensagem de erro para a view
-            }
-        }
-        catch (Exception ex)
-        {
-            // Lidar com erros de rede, etc.
-            return View("Error");
-        }
+        ViewData["Title"] = "Adicionar Novo Aluno";
+        return View();
     }
-}
+
+    // Ação para lidar com o POST do formulário de adição
+    [HttpPost]
+    public IActionResult Add(string studentName) // Substitua 'string studentName' pelo seu modelo Aluno
+    {
+        // Lógica para adicionar o aluno ao banco de dados
+        // Console.WriteLine($"Adicionando aluno: {studentName}");
+
+        // Redireciona de volta para a lista de alunos
+        return RedirectToAction("Index");
+    }
+
+    // Ações para Editar, Detalhes, Excluir viriam aqui...
+    // public IActionResult Edit(int id) { ... }
+    // public IActionResult Details(int id) { ... }
+    // public IActionResult Delete(int id) { ... }
