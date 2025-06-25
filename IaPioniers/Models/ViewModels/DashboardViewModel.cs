@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json; // Certifique-se de ter o pacote Newtonsoft.Json instalado no seu projeto C#
+using Newtonsoft.Json;
 
 namespace IaPioniers.Models.ViewModels
 {
@@ -29,32 +29,31 @@ namespace IaPioniers.Models.ViewModels
         [JsonProperty("recentActivities")]
         public List<RecentActivityViewModel> RecentActivities { get; set; }
 
-        // PROPRIEDADES NECESSÁRIAS PARA O DASHBOARD DE RESUMO DE DADOS
-        [JsonProperty("evasionRiskCount")] // Garante que o nome JSON corresponde ao da API Python
+        [JsonProperty("evasionRiskCount")]
         public int EvasionRiskCount { get; set; }
 
-        [JsonProperty("studentEvasionList")] // Garante que o nome JSON corresponde ao da API Python
+        [JsonProperty("studentEvasionList")]
         public List<StudentEvasionInfoViewModel> StudentEvasionList { get; set; }
 
         public DashboardViewModel()
         {
             CourseSummaries = new List<CourseSummaryViewModel>();
             RecentActivities = new List<RecentActivityViewModel>();
-            CurrentModuleInfo = new CurrentModuleInfoViewModel(); // Inicializa para evitar NullReferenceException
-            StudentEvasionList = new List<StudentEvasionInfoViewModel>(); // Inicializa a lista
+            CurrentModuleInfo = new CurrentModuleInfoViewModel();
+            StudentEvasionList = new List<StudentEvasionInfoViewModel>();
         }
     }
 
     public class CurrentModuleInfoViewModel
     {
         [JsonProperty("number")]
-        public int? Number { get; set; } // int? para permitir valores nulos
+        public int? Number { get; set; }
 
         [JsonProperty("start_date")]
-        public string Start_date { get; set; } // Mantido como string, pode ser convertido para DateTime no frontend se necessário
+        public string Start_date { get; set; }
 
         [JsonProperty("end_date")]
-        public string End_date { get; set; } // Mantido como string
+        public string End_date { get; set; }
 
         [JsonProperty("display_name")]
         public string Display_name { get; set; }
@@ -72,10 +71,10 @@ namespace IaPioniers.Models.ViewModels
         public int StudentsAtRiskInCourse { get; set; }
 
         [JsonProperty("AverageEngagementScore")]
-        public decimal AverageEngagementScore { get; set; } // Use decimal para precisão
+        public decimal AverageEngagementScore { get; set; }
 
         [JsonProperty("LastActivityDate")]
-        public string LastActivityDate { get; set; } // Mantido como string
+        public string LastActivityDate { get; set; }
     }
 
     public class RecentActivityViewModel
@@ -87,19 +86,27 @@ namespace IaPioniers.Models.ViewModels
         public string Status { get; set; }
 
         [JsonProperty("DataHora")]
-        public DateTime DataHora { get; set; } // Pode ser desserializado diretamente para DateTime
+        public DateTime DataHora { get; set; }
 
         [JsonProperty("Usuario")]
         public string Usuario { get; set; }
     }
 
-    // CLASSE NECESSÁRIA PARA A LISTA DE ALUNOS EM EVASÃO
     public class StudentEvasionInfoViewModel
     {
-        // Certifique-se de que os nomes das propriedades C# correspondem aos nomes retornados pela API Python
+        [JsonProperty("StudentName")]
         public string StudentName { get; set; }
+
+        [JsonProperty("CourseName")] // NOVA PROPRIEDADE
+        public string CourseName { get; set; }
+
+        [JsonProperty("TotalAccesses")]
         public int TotalAccesses { get; set; }
+
+        [JsonProperty("DaysWithoutAccess")]
         public int DaysWithoutAccess { get; set; }
-        public int EvasionProbability { get; set; } // 0-100
+
+        [JsonProperty("EvasionProbability")]
+        public int EvasionProbability { get; set; }
     }
 }
