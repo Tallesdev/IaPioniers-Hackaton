@@ -29,11 +29,19 @@ namespace IaPioniers.Models.ViewModels
         [JsonProperty("recentActivities")]
         public List<RecentActivityViewModel> RecentActivities { get; set; }
 
+        // PROPRIEDADES NECESSÁRIAS PARA O DASHBOARD DE RESUMO DE DADOS
+        [JsonProperty("evasionRiskCount")] // Garante que o nome JSON corresponde ao da API Python
+        public int EvasionRiskCount { get; set; }
+
+        [JsonProperty("studentEvasionList")] // Garante que o nome JSON corresponde ao da API Python
+        public List<StudentEvasionInfoViewModel> StudentEvasionList { get; set; }
+
         public DashboardViewModel()
         {
             CourseSummaries = new List<CourseSummaryViewModel>();
             RecentActivities = new List<RecentActivityViewModel>();
             CurrentModuleInfo = new CurrentModuleInfoViewModel(); // Inicializa para evitar NullReferenceException
+            StudentEvasionList = new List<StudentEvasionInfoViewModel>(); // Inicializa a lista
         }
     }
 
@@ -83,5 +91,15 @@ namespace IaPioniers.Models.ViewModels
 
         [JsonProperty("Usuario")]
         public string Usuario { get; set; }
+    }
+
+    // CLASSE NECESSÁRIA PARA A LISTA DE ALUNOS EM EVASÃO
+    public class StudentEvasionInfoViewModel
+    {
+        // Certifique-se de que os nomes das propriedades C# correspondem aos nomes retornados pela API Python
+        public string StudentName { get; set; }
+        public int TotalAccesses { get; set; }
+        public int DaysWithoutAccess { get; set; }
+        public int EvasionProbability { get; set; } // 0-100
     }
 }
