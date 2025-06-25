@@ -45,6 +45,7 @@ public class StudentController : Controller
         // Redireciona de volta para a lista de alunos
         return RedirectToAction("Index");
     }
+}
 
     // Ações para Editar, Detalhes, Excluir viriam aqui...
     // public IActionResult Edit(int id) { ... }
