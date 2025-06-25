@@ -1,14 +1,17 @@
-﻿using IaPioniers.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using IaPioniers.Models.ViewModels;
+using IaPioniers.Models; // Garanta que este using está presente para a classe Course
 
 namespace IaPioniers.Services
 {
     public interface IProfessorDashboardService
     {
-        Task<List<CourseSummary>> GetCoursesAsync();
-        Task<ProfessorDashboardData> GetDashboardDataAsync(string courseId);
-        Task<bool> GenerateReportAsync(string courseId); // Retorna bool ou caminho/URL do relatório
-        Task<CourseDetailedAnalystics> GetCourseDetailsAsync(string courseId);
+        Task<DashboardViewModel> GetProfessorDashboardDataAsync(string professorId);
+        Task<CourseDetailedAnalystics> GetCourseDetailsAsync(string id);
+
+        // Agora, o tipo 'Course' deve ser reconhecido
+        Task<List<Course>> GetCoursesAsync();
+
+        Task<string> GetDashboardDataAsync(string professorId);
+        Task<string> GenerateReportAsync(string reportType);
     }
 }

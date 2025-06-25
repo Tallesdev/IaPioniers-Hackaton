@@ -21,7 +21,6 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 # Definição do caminho do cache e do modelo (apenas para uso interno deste script)
 RAW_LOGS_CACHE_FILE = os.path.join(LOCAL_DATA_DIR, 'raw_logs_cache.pkl')
-# FEATURES_ONLY_CACHE_FILE = os.path.join(LOCAL_DATA_DIR, 'features_only_cache.pkl') # Esta linha pode ser removida se não for mais usado o PKL
 MODEL_FILENAME = 'evasion_model.joblib'
 FEATURES_FILENAME = 'model_features.json'
 
@@ -40,16 +39,17 @@ INACTIVITY_THRESHOLD_DAYS = 30 # Aluno é considerado evadido se não acessa há
 def process_moodle_logs_for_evasion(df_raw_logs: pd.DataFrame, inactivity_threshold_days: int = INACTIVITY_THRESHOLD_DAYS):
     """
     Processa os logs brutos do Moodle para extrair features relevantes para previsão de evasão.
+    Inclui agora mais features para o calculador de risco baseado em regras.
     
     Args:
         df_raw_logs (pd.DataFrame): DataFrame contendo os logs brutos do Moodle.
                                     Deve incluir 'user_id', 'course_fullname', 'date' (datetime),
-                                    'user_lastaccess' (datetime ou timestamp), 'eventname', 'action'.
+                                    'user_lastaccess' (datetime ou timestamp), 'eventname', 'action', 'component'.
         inactivity_threshold_days (int): Número de dias de inatividade para considerar um aluno evadido.
                                          Este é o 'Y' na regra "não acessa há mais de Y dias".
                                         
     Returns:
-        pd.DataFrame: DataFrame com features prontas para o modelo, incluindo 'is_evaded'.
+        pd.DataFrame: DataFrame com features prontas para o modelo e para as regras, incluindo 'is_evaded'.
     """
     if df_raw_logs.empty:
         print(f"[{datetime.now()}] DataFrame de logs brutos vazio. Retornando DataFrame de features vazio.")
@@ -57,51 +57,69 @@ def process_moodle_logs_for_evasion(df_raw_logs: pd.DataFrame, inactivity_thresh
 
     print(f"[{datetime.now()}] Iniciando processamento de features para evasão...")
 
-    # Garante que as colunas essenciais existem
-    required_cols = ['user_id', 'course_fullname', 'date', 'user_lastaccess']
+    # Garante que as colunas essenciais existem e trata as ausentes
+    required_cols_for_processing = ['user_id', 'user_name', 'course_fullname', 'date', 'user_lastaccess', 'eventname', 'action', 'component', 'target']
     
-    # Ajuste para lidar com colunas ausentes de forma mais robusta
-    for col in required_cols:
+    for col in required_cols_for_processing:
         if col not in df_raw_logs.columns:
-            if col == 'course_fullname': # Pode ser que o dado não venha com essa coluna, então criamos
+            if col == 'course_fullname':
                 df_raw_logs['course_fullname'] = 'Curso Desconhecido'
+            elif col == 'user_name':
+                df_raw_logs['user_name'] = df_raw_logs['user_id'].astype(str) # Usa user_id como fallback para user_name
+            elif col in ['eventname', 'action', 'component', 'target']:
+                df_raw_logs[col] = '' # Preenche com string vazia para eventos/ações/componentes/targets ausentes
             else:
                 print(f"[{datetime.now()}] Erro: Coluna '{col}' essencial não encontrada no DataFrame de logs brutos. Abortando processamento.")
                 return pd.DataFrame()
 
-
-    # Conversão para datetime se ainda não estiver
-    # Usa errors='coerce' para transformar valores inválidos em NaT (Not a Time)
-    if not pd.api.types.is_datetime64_any_dtype(df_raw_logs['date']):
-        df_raw_logs['date'] = pd.to_datetime(df_raw_logs['date'], errors='coerce')
-    if not pd.api.types.is_datetime64_any_dtype(df_raw_logs['user_lastaccess']):
-        # Tenta converter de timestamp (segundos) se for numérico, senão de string
-        if pd.api.types.is_numeric_dtype(df_raw_logs['user_lastaccess']):
-            df_raw_logs['user_lastaccess'] = pd.to_datetime(df_raw_logs['user_lastaccess'], unit='s', errors='coerce')
-        else:
-            df_raw_logs['user_lastaccess'] = pd.to_datetime(df_raw_logs['user_lastaccess'], errors='coerce')
-    
+    # Conversão para datetime
+    df_raw_logs['date'] = pd.to_datetime(df_raw_logs['date'], errors='coerce')
+    if pd.api.types.is_numeric_dtype(df_raw_logs['user_lastaccess']):
+        df_raw_logs['user_lastaccess'] = pd.to_datetime(df_raw_logs['user_lastaccess'], unit='s', errors='coerce')
+    else:
+        df_raw_logs['user_lastaccess'] = pd.to_datetime(df_raw_logs['user_lastaccess'], errors='coerce')
+        
     # Remover linhas com datas inválidas após a conversão
     df_raw_logs.dropna(subset=['date', 'user_lastaccess'], inplace=True)
     if df_raw_logs.empty:
         print(f"[{datetime.now()}] DataFrame vazio após remoção de datas inválidas.")
         return pd.DataFrame()
 
-    # Garantir tipos de dados corretos para IDs
+    # Garantir tipos de dados corretos para IDs e texto
     df_raw_logs['user_id'] = df_raw_logs['user_id'].astype(str)
-    df_raw_logs['course_fullname'] = df_raw_logs['course_fullname'].astype(str) # Já tratado acima, mas reforça
+    df_raw_logs['user_name'] = df_raw_logs['user_name'].astype(str)
+    df_raw_logs['course_fullname'] = df_raw_logs['course_fullname'].astype(str)
+    df_raw_logs['eventname'] = df_raw_logs['eventname'].astype(str).str.lower()
+    df_raw_logs['action'] = df_raw_logs['action'].astype(str).str.lower()
+    df_raw_logs['component'] = df_raw_logs['component'].astype(str).str.lower()
+    df_raw_logs['target'] = df_raw_logs['target'].astype(str).str.lower()
+
 
     # Calcular a data de referência como a data mais recente nos logs
     current_date = df_raw_logs['date'].max()
 
-    # Calcular inatividade geral do usuário
-    # Agrupa por user_id e pega o último acesso geral (que é o 'user_lastaccess' mais recente)
-    # A diferença para 'current_date' nos dará a inatividade
+    # --- FEATURES GLOBAIS POR USUÁRIO ---
+    # Inatividade Global (já existe como 'overall_last_access_days_ago' no df_features final)
     latest_user_access = df_raw_logs.groupby('user_id')['user_lastaccess'].max().reset_index()
     latest_user_access.rename(columns={'user_lastaccess': 'actual_user_last_access_date'}, inplace=True)
     latest_user_access['overall_last_access_days_ago'] = (current_date - latest_user_access['actual_user_last_access_date']).dt.days
 
-    # Features por Usuário e Curso
+    # Total de Ações Globais por Usuário
+    total_actions_global = df_raw_logs.groupby('user_id').size().reset_index(name='total_actions_global')
+
+    # Contagem de Posts em Fóruns Globais por Usuário
+    forum_posts = df_raw_logs[
+        (df_raw_logs['component'] == 'mod_forum') | (df_raw_logs['component'] == 'mod_discussion') |
+        (df_raw_logs['action'].str.contains('posted|replied|created'))
+    ].groupby('user_id').size().reset_index(name='global_forum_posts_count')
+
+    # Contagem de Tentativas de Quiz Globais por Usuário
+    quiz_attempts = df_raw_logs[
+        (df_raw_logs['component'] == 'mod_quiz') &
+        (df_raw_logs['action'].str.contains('attempt|started|submitted'))
+    ].groupby('user_id').size().reset_index(name='global_quiz_attempts_count')
+
+    # --- FEATURES POR USUÁRIO E CURSO ---
     df_course_user_agg = df_raw_logs.groupby(['user_id', 'user_name', 'course_fullname']).agg(
         course_activity_count=('date', 'count'), # Número total de atividades no curso
         course_unique_actions=('action', lambda x: x.nunique()), # Quantidade de ações únicas
@@ -112,18 +130,93 @@ def process_moodle_logs_for_evasion(df_raw_logs: pd.DataFrame, inactivity_thresh
     # Calcular dias desde a última atividade no curso
     df_course_user_agg['course_last_activity_days_ago'] = (current_date - df_course_user_agg['course_last_activity_date']).dt.days
 
-    # Merge com a informação de último acesso geral
-    df_features = pd.merge(df_course_user_agg, latest_user_access[['user_id', 'overall_last_access_days_ago']], on='user_id', how='left')
-
     # Calcular a duração da atividade do aluno no curso (do primeiro ao último log conhecido)
-    df_features['course_activity_duration_days'] = (df_features['course_last_activity_date'] - df_features['course_first_activity_date']).dt.days
+    df_course_user_agg['course_activity_duration_days'] = (df_course_user_agg['course_last_activity_date'] - df_course_user_agg['course_first_activity_date']).dt.days
+    # REMOVIDA A LINHA ABAIXO QUE CAUSAVA O ERRO:
+    # df_course_user_agg['course_activity_duration_days'] = df_course_user_agg['course_activity_duration_days'].dt.days # Converter para int
 
     # Calcular 'engagement_per_day' (atividades por dia de duração no curso)
-    # Evitar divisão por zero, então adiciona 1 dia se a duração for 0
-    df_features['engagement_per_day'] = df_features['course_activity_count'] / (df_features['course_activity_duration_days'].replace(0, 1) + 1)
+    df_course_user_agg['engagement_per_day'] = df_course_user_agg['course_activity_count'] / (df_course_user_agg['course_activity_duration_days'].replace(0, 1) + 1)
     
-    # Lidar com NaNs que possam surgir de cálculos (ex: se um curso tem apenas 1 log, duration_days pode ser 0)
-    df_features = df_features.fillna(0) # Substitui NaNs por 0, ou uma estratégia mais inteligente se necessário
+    # Número de tipos únicos de recurso acessados por curso
+    resource_access_types = df_raw_logs[
+        (df_raw_logs['action'].str.contains('viewed|accessed')) & 
+        (df_raw_logs['component'].str.contains('mod_resource|mod_page|mod_url|mod_folder|mod_book|mod_lesson|mod_file|mod_glossary'))
+    ].groupby(['user_id', 'course_fullname'])['component'].nunique().reset_index(name='unique_resource_types_accessed_course')
+
+
+    # --- MERGE DE TODAS AS FEATURES EM UM ÚNICO DATAFRAME ---
+    df_features = df_course_user_agg.copy()
+
+    # Merge com as features globais
+    df_features = pd.merge(df_features, latest_user_access[['user_id', 'overall_last_access_days_ago', 'actual_user_last_access_date']], on='user_id', how='left')
+    df_features = pd.merge(df_features, total_actions_global, on='user_id', how='left')
+    df_features = pd.merge(df_features, forum_posts, on='user_id', how='left')
+    df_features = pd.merge(df_features, quiz_attempts, on='user_id', how='left')
+    df_features = pd.merge(df_features, resource_access_types, on=['user_id', 'course_fullname'], how='left')
+
+    # --- FEATURES MAIS COMPLEXAS (LÓGICA SIMPLIFICADA OU DEFAULT) ---
+    # A implementação completa dessas features exige mais dados e lógica de negócios (ciclos acadêmicos, etc.)
+    # Para fins de teste e demonstração, vamos dar valores padrão ou lógicas muito simplificadas.
+
+    # is_in_first_activity_cycle_no_submission (Exemplo simplificado: nenhum submission no curso nos primeiros 7 dias)
+    # Requer que você tenha uma forma de identificar a "primeira atividade" ou "ciclo"
+    # Placeholder: assume False por padrão ou True para alunos com 0 atividades nos primeiros dias do curso.
+    # Esta feature é difícil de calcular sem um contexto de "ciclo" e "atividades de submissão"
+    # Vamos defini-la como False por padrão, e você pode refinar.
+    df_features['is_in_first_activity_cycle_no_submission'] = False
+    # Exemplo de lógica simplificada para fins de teste/demo (requer df_raw_logs com eventnames de submissão):
+    # alunos_sem_submissao_primeiros_dias = df_raw_logs[
+    #     (df_raw_logs['date'] - df_raw_logs.groupby('user_id')['date'].transform('min')).dt.days <= 7
+    # ].groupby('user_id').apply(lambda x: not x['action'].str.contains('submitted|graded').any())
+    # df_features['is_in_first_activity_cycle_no_submission'] = df_features['user_id'].isin(alunos_sem_submissao_primeiros_dias[alunos_sem_submissao_primeiros_dias].index)
+
+
+    # has_recent_visual_interaction_in_cycle (Ligado à feature acima)
+    # Placeholder: True por padrão, a menos que você tenha uma forma de identificar.
+    df_features['has_recent_visual_interaction_in_cycle'] = True 
+    # Exemplo de lógica simplificada (requer df_raw_logs com actions de visualização):
+    # visual_interaction_types = ['viewed', 'accessed']
+    # has_visual_interaction = df_raw_logs[
+    #     df_raw_logs['action'].isin(visual_interaction_types)
+    # ].groupby('user_id').size() > 0
+    # df_features['has_recent_visual_interaction_in_cycle'] = df_features['user_id'].map(has_visual_interaction).fillna(False)
+
+
+    # has_falling_trend_90_days (Muito complexo, requer série temporal de logs)
+    # Placeholder: False por padrão.
+    df_features['has_falling_trend_90_days'] = False
+    # Exemplo (muito simplificado, não recomendado para produção sem mais dados):
+    # if 'daily_activity_count' in df_raw_logs.columns: # Você precisaria gerar isso primeiro
+    #     df_features['has_falling_trend_90_days'] = df_raw_logs.groupby('user_id')['daily_activity_count'].apply(
+    #         lambda x: len(x) >= 90 and x.tail(30).mean() < x.head(30).mean() # Média dos últimos 30 dias < primeiros 30
+    #     ).fillna(False)
+
+
+    # --- Lidar com NaNs que possam surgir de merges ou cálculos ---
+    # Preencher NaNs em colunas numéricas com 0 (ou um valor mais apropriado)
+    numeric_cols_for_fillna = [
+        'overall_last_access_days_ago', 'total_actions_global', 
+        'global_forum_posts_count', 'global_quiz_attempts_count',
+        'unique_resource_types_accessed_course', 
+        'course_activity_count', 'course_unique_actions',
+        'course_last_activity_days_ago', 'course_activity_duration_days',
+        'engagement_per_day'
+    ]
+    for col in numeric_cols_for_fillna:
+        if col in df_features.columns:
+            df_features[col] = df_features[col].fillna(0)
+    
+    # Preencher NaNs em colunas booleanas com False
+    boolean_cols_for_fillna = [
+        'is_in_first_activity_cycle_no_submission',
+        'has_recent_visual_interaction_in_cycle',
+        'has_falling_trend_90_days'
+    ]
+    for col in boolean_cols_for_fillna:
+        if col in df_features.columns:
+            df_features[col] = df_features[col].fillna(False)
+
 
     # Criar a variável alvo: is_evaded
     # Um aluno é considerado "evadido" se o seu 'overall_last_access_days_ago' (ultimo acesso geral no Moodle)
@@ -146,7 +239,7 @@ def train_and_save_model(df_features: pd.DataFrame, test_size: float = 0.2, rand
         df_features (pd.DataFrame): DataFrame com as features e a variável alvo 'is_evaded'.
         test_size (float): Proporção dos dados a serem usados para teste.
         random_state (int): Semente para reprodutibilidade.
-    
+        
     Returns:
         tuple: (model, feature_names) se o treinamento for bem-sucedido, None caso contrário.
     """
@@ -159,11 +252,24 @@ def train_and_save_model(df_features: pd.DataFrame, test_size: float = 0.2, rand
     features_to_exclude = [
         'user_id', 'user_name', 'course_fullname', 'is_evaded', 
         'course_last_activity_date', 'course_first_activity_date',
-        'actual_user_last_access_date' # Adicionado esta coluna que foi criada no merge
+        'actual_user_last_access_date'
     ]
     
     # Selecionar apenas colunas numéricas que não estão na lista de exclusão
     X = df_features.select_dtypes(include=[np.number]).drop(columns=[col for col in features_to_exclude if col in df_features.columns and col in df_features.select_dtypes(include=[np.number]).columns], errors='ignore')
+    
+    # Adicionar colunas booleanas que podem ser usadas como features no modelo
+    # Converte booleans para inteiros (True=1, False=0)
+    boolean_features_for_model = [
+        'is_in_first_activity_cycle_no_submission',
+        'has_recent_visual_interaction_in_cycle',
+        'has_falling_trend_90_days'
+    ]
+    for b_col in boolean_features_for_model:
+        if b_col in df_features.columns and b_col not in X.columns:
+            X[b_col] = df_features[b_col].astype(int)
+
+
     y = df_features['is_evaded']
 
     # Lidar com NaNs, por exemplo, preenchendo com 0.
@@ -171,7 +277,7 @@ def train_and_save_model(df_features: pd.DataFrame, test_size: float = 0.2, rand
 
     # Verifique se ainda há features para o treinamento após a exclusão
     if X.empty or X.shape[1] == 0:
-        print(f"[{datetime.now()}] Nenhuma feature numérica válida encontrada após o pré-processamento para treinamento. Abortando.")
+        print(f"[{datetime.now()}] Nenhuma feature numérica ou booleana válida encontrada após o pré-processamento para treinamento. Abortando.")
         return None, None
     
     # Lista das features que o modelo usará - essencial para garantir consistência na predição
@@ -181,8 +287,6 @@ def train_and_save_model(df_features: pd.DataFrame, test_size: float = 0.2, rand
     print(f"[{datetime.now()}] Balanceamento da classe 'is_evaded':\n{y.value_counts(normalize=True)}")
 
     # Dividir dados em treino e teste
-    # Estratificar para garantir que a proporção de classes (evadidos/não evadidos) seja mantida
-    # nos conjuntos de treino e teste.
     try:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)
     except ValueError as e:

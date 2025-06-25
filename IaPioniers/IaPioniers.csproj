@@ -7,12 +7,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="unifenas_api_python\routes\professor_routes.py" />
+    <Folder Include="unifenas_api_python\cache\" />
+    <Folder Include="unifenas_api_python\local_data\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="unifenas_api_python\cache\" />
-    <Folder Include="unifenas_api_python\local_data\" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
 </Project>

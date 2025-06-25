@@ -1,115 +1,259 @@
-﻿# routes/professor_routes.py
+﻿# File: routes/professor_routes.py
+
 from flask import Blueprint, jsonify, request, current_app
-import pandas as pd # <--- ADICIONE OU MANTENHA ESTA LINHA
-import numpy as np  # <--- ADICIONE OU MANTENHA ESTA LINHA
-from evasion_reports import get_evasion_risk_students_for_professor
-from datetime import datetime
+import pandas as pd
+from datetime import datetime, timedelta, date # Importe date também
+import json
+from academic_calendar_utils import get_module_info_by_fixed_dates # Importa a função do seu calendário
 
-professor_bp = Blueprint('professor', __name__)
+professor_bp = Blueprint('professor', __name__, url_prefix='/api/professor')
 
-@professor_bp.route('/professor-evasion-risk', methods=['GET'])
-def professor_evasion_risk():
-    professor_id = request.args.get('professor_id')
-    course_name = request.args.get('course_name')
+@professor_bp.route('/dashboard-data', methods=['GET'])
+def get_professor_dashboard_data():
+    try:
+        professor_id = request.args.get('professor_id')
+        if not professor_id:
+            current_app.logger.warning(f"[{datetime.now()}] Requisição de dashboard sem professor_id.")
+            return jsonify({"error": "Parâmetro professor_id é obrigatório"}), 400
 
-    if not professor_id and not course_name:
-        return jsonify({"error": "Por favor, forneça 'professor_id' ou 'course_name' como parâmetro de consulta."}), 400
+        # --- ACESSAR CACHES DO app.config ---
+        df_raw_logs_cache = current_app.config.get('RAW_LOGS_CACHE')
+        df_risk_scores_cache = current_app.config.get('RISK_SCORES_CACHE')
+        df_features_cache = current_app.config.get('FEATURES_CACHE')
+        professor_course_mapping = current_app.config.get('PROFESSOR_COURSE_MAPPING')
 
-    df_risk_scores_cache = current_app.config.get('RISK_SCORES_CACHE')
-    df_features_cache = current_app.config.get('FEATURES_CACHE') 
+        if df_raw_logs_cache is None or df_raw_logs_cache.empty or \
+           df_risk_scores_cache is None or df_risk_scores_cache.empty or \
+           df_features_cache is None or df_features_cache.empty or \
+           professor_course_mapping is None or not professor_course_mapping:
+            current_app.logger.error(f"[{datetime.now()}] Caches de dados ou mapeamento estão vazios/inválidos no app.config. Verifique o carregamento inicial em app.py.")
+            return jsonify({"error": "Dados internos não disponíveis para processamento. Tente carregar novamente os caches."}), 500
 
-    if (df_risk_scores_cache is None or df_risk_scores_cache.empty or
-        df_features_cache is None or df_features_cache.empty):
-        return jsonify({
-            "error": "Dados de risco de evasão ou features não disponíveis. Por favor, execute collect_raw_logs.py e process_evasion_data.py"
-        }), 500
-    
-    professor_course_mapping = current_app.config.get('PROFESSOR_COURSE_MAPPING')
-    if professor_id and not professor_course_mapping:
-        return jsonify({
-            "error": "Mapeamento professor-curso não disponível. Não é possível filtrar por professor_id sem 'professor_curso_mapping.json'."
-        }), 500
+        professor_courses = professor_course_mapping.get(professor_id)
+        if not professor_courses:
+            current_app.logger.warning(f"[{datetime.now()}] Professor '{professor_id}' não encontrado no mapeamento ou sem cursos associados.")
+            return jsonify({
+                "professorNome": professor_id,
+                "totalStudents": 0,
+                "studentsAtRisk": 0,
+                "totalActivities": 0,
+                "currentModuleInfo": {},
+                "courseSummaries": [],
+                "recentActivities": [],
+                "evasionRiskCount": 0,
+                "studentEvasionList": []
+            })
 
-    risky_students_report = get_evasion_risk_students_for_professor(
-        df_risk_scores_cache,
-        df_features_cache, 
-        professor_id,
-        course_name
-    )
-    return jsonify(risky_students_report)
+        # --- Determinação do Módulo Atual usando academic_calendar_utils ---
+        # Definindo a data atual como uma data dentro do Módulo 2 de 2025 para teste/apresentação.
+        # Ajuste esta data se precisar testar outro módulo no futuro.
+        current_date = datetime(2025, 6, 15).date() # Use .date() para compatibilidade com academic_calendar_utils
+        # current_date = date.today() # Para usar a data atual
 
+        current_app.logger.debug(f"[{datetime.now()}] Data de referência para determinação do módulo: {current_date.strftime('%Y-%m-%d')}")
 
-@professor_bp.route('/professor/course-summaries', methods=['GET'])
-def get_professor_course_summaries():
-    professor_name = request.args.get('professor_id')
-    current_app.logger.debug(f"Professor ID recebido (raw): {professor_name}")
-    print(f"DEBUG: Professor solicitado: {professor_name}")
+        current_module_info_raw = get_module_info_by_fixed_dates(current_date)
 
-    if not professor_name:
-        return jsonify({"error": "O parâmetro 'professor_id' (nome do professor) é obrigatório."}), 400
-
-    df_risk_scores_cache = current_app.config.get('RISK_SCORES_CACHE')
-    df_features_cache = current_app.config.get('FEATURES_CACHE')
-    professor_course_mapping = current_app.config.get('PROFESSOR_COURSE_MAPPING')
-
-    if (df_risk_scores_cache is None or df_risk_scores_cache.empty or
-        df_features_cache is None or df_features_cache.empty or
-        professor_course_mapping is None or not professor_course_mapping):
-        return jsonify({
-            "error": "Dados ou mapeamento de professor-curso não disponíveis nos caches. Verifique se os caches foram carregados e o 'professor_course_mapping.json' está presente e no formato correto."
-        }), 500
-
-    course_summaries = []
-    
-    courses_for_professor = professor_course_mapping.get(professor_name, [])
-    print(f"DEBUG: Cursos mapeados para {professor_name}: {courses_for_professor}")
-
-    if not df_features_cache.empty:
-        print(f"DEBUG: Nomes de curso únicos em df_features_cache: {df_features_cache['course_fullname'].unique()}")
-    if not df_risk_scores_cache.empty:
-        print(f"DEBUG: Nomes de curso únicos em df_risk_scores_cache: {df_risk_scores_cache['course_fullname'].unique()}")
-    
-    for course_name_identifier in courses_for_professor:
-        print(f"DEBUG: Processando curso: {course_name_identifier}")
+        if not current_module_info_raw:
+            current_app.logger.warning(f"[{datetime.now()}] Nenhum módulo encontrado para a data {current_date.strftime('%Y-%m-%d')}. Verifique as definições em academic_calendar.py.")
+            # Retorna uma estrutura vazia, mas completa para o C#
+            return jsonify({
+                "professorNome": professor_id,
+                "totalStudents": 0,
+                "studentsAtRisk": 0,
+                "totalActivities": 0,
+                "currentModuleInfo": {},
+                "courseSummaries": [],
+                "recentActivities": [],
+                "evasionRiskCount": 0,
+                "studentEvasionList": []
+            })
         
-        # Filtra os alunos que estão neste curso nas features e nos scores de risco
-        students_in_course_features_df = df_features_cache[
-            (df_features_cache['course_fullname'] == course_name_identifier)
+        # Converte as datas de date para datetime para compatibilidade com os DataFrames
+        current_module_info_start_date = datetime.combine(current_module_info_raw["start_date"], datetime.min.time())
+        current_module_info_end_date = datetime.combine(current_module_info_raw["end_date"], datetime.max.time())
+
+        current_module_info = {
+            "module_number": current_module_info_raw["module_number"],
+            "start_date": current_module_info_start_date,
+            "end_date": current_module_info_end_date,
+            "display_name": current_module_info_raw["display_name"] if "display_name" in current_module_info_raw else f"Módulo {current_module_info_raw['module_number']}"
+        }
+
+        current_app.logger.info(f"[{datetime.now()}] Datas de filtro do módulo ativo: Início={current_module_info_start_date}, Fim={current_module_info_end_date}")
+
+        # --- Lógica de Filtro e Cálculo de Métricas (mantida) ---
+        if not pd.api.types.is_datetime64_any_dtype(df_raw_logs_cache['time_dt']):
+             current_app.logger.error(f"[{datetime.now()}] 'time_dt' em df_raw_logs_cache não é datetime. Isso indica um problema no carregamento em app.py.")
+             return jsonify({"error": "Erro interno: Formato de data inválido nos logs brutos."}), 500
+            
+        filtered_logs_by_module = df_raw_logs_cache[
+            (df_raw_logs_cache['time_dt'] >= current_module_info_start_date) &
+            (df_raw_logs_cache['time_dt'] <= current_module_info_end_date)
         ]
-        total_students_in_course = len(students_in_course_features_df)
+        current_app.logger.info(f"[{datetime.now()}] Logs APÓS FILTRO DE PERÍODO DO MÓDULO ({current_module_info_start_date} a {current_module_info_end_date}): {len(filtered_logs_by_module)} linhas.")
 
-        risky_students_df = df_risk_scores_cache[
-            (df_risk_scores_cache['course_fullname'] == course_name_identifier) &
-            (df_risk_scores_cache['is_at_risk'] == 1) # Usando o indicador binário do rule-based
+        if 'course_fullname' not in filtered_logs_by_module.columns:
+            current_app.logger.error(f"[{datetime.now()}] Coluna 'course_fullname' ausente nos logs filtrados.")
+            return jsonify({"error": "Erro interno: Coluna de curso ausente."}), 500
+
+        filtered_logs_for_professor = filtered_logs_by_module[
+            filtered_logs_by_module['course_fullname'].isin(professor_courses)
+        ].copy() 
+        current_app.logger.info(f"[{datetime.now()}] Logs APÓS FILTRO DE CURSO DO PROFESSOR: {len(filtered_logs_for_professor)} linhas. (Cursos: {professor_courses})")
+
+        # --- Cálculos Principais ---
+        total_students = filtered_logs_for_professor['user_id'].nunique()
+        
+        students_at_risk_df_filtered = df_risk_scores_cache[
+            (df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())) &
+            (df_risk_scores_cache['is_at_risk'] == 1)
         ]
-        students_at_risk_in_course = len(risky_students_df)
+        students_at_risk = students_at_risk_df_filtered['user_id'].nunique()
+        current_app.logger.debug(f"[{datetime.now()}] Total de alunos para {professor_id}: {total_students}, Alunos em risco: {students_at_risk}")
 
-        print(f"DEBUG: Curso '{course_name_identifier}': Total de alunos: {total_students_in_course}, Alunos em risco: {students_at_risk_in_course}")
+        total_activities = len(filtered_logs_for_professor)
 
-        # --- CÁLCULO DE AVERAGE ENGAGEMENT SCORE ---
-        average_engagement_score = None # Inicializa a variável antes do if
-        if not students_in_course_features_df.empty and 'engagement_per_day' in students_in_course_features_df.columns:
-            valid_engagements = students_in_course_features_df['engagement_per_day'].dropna()
-            if not valid_engagements.empty:
-                average_engagement_score = round(valid_engagements.mean(), 2)
-        print(f"DEBUG: AverageEngagementScore para '{course_name_identifier}': {average_engagement_score}")
+        # --- Resumo por Curso ---
+        course_summaries_list = []
+        if not filtered_logs_for_professor.empty:
+            students_in_course_raw = filtered_logs_for_professor.groupby('course_fullname')['user_id'].nunique().reset_index(name='StudentsInCourse')
+            
+            valid_risk_users = df_risk_scores_cache['user_id'].unique().tolist() if not df_risk_scores_cache.empty else []
+            valid_feature_users = df_features_cache['user_id'].unique().tolist() if not df_features_cache.empty else []
 
-        # --- CÁLCULO DE LAST ACTIVITY DATE ---
-        last_activity_date = None # Inicializa a variável antes do if
-        if not students_in_course_features_df.empty and 'course_last_activity_date' in students_in_course_features_df.columns:
-            valid_dates = pd.to_datetime(students_in_course_features_df['course_last_activity_date'], errors='coerce').dropna()
-            if not valid_dates.empty:
-                last_activity_date = valid_dates.max().strftime('%Y-%m-%d %H:%M:%S')
-        print(f"DEBUG: LastActivityDate para '{course_name_identifier}': {last_activity_date}")
+            df_risk_scores_professor_courses = df_risk_scores_cache[
+                (df_risk_scores_cache['course_fullname'].isin(professor_courses)) &
+                (df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())) &
+                (df_risk_scores_cache['user_id'].isin(valid_risk_users)) 
+            ].copy()
+            
+            students_at_risk_in_course = df_risk_scores_professor_courses[df_risk_scores_professor_courses['is_at_risk'] == 1] \
+                                             .groupby('course_fullname')['user_id'].nunique().reset_index(name='StudentsAtRiskInCourse')
+            
+            df_features_professor_courses = df_features_cache[
+                (df_features_cache['course_fullname'].isin(professor_courses)) &
+                (df_features_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())) &
+                (df_features_cache['user_id'].isin(valid_feature_users)) 
+            ].copy()
 
-        # Adiciona os dados ao resumo do curso, usando as variáveis calculadas
-        course_summaries.append({
-            "CourseName": course_name_identifier,
-            "StudentsInCourse": total_students_in_course,
-            "StudentsAtRiskInCourse": students_at_risk_in_course,
-            "LastActivityDate": last_activity_date, # Usando a variável 'last_activity_date'
-            "AverageEngagementScore": average_engagement_score # Usando a variável 'average_engagement_score'
-        })
-    
-    print(f"DEBUG: Resumo final dos cursos: {course_summaries}")
-    return jsonify(course_summaries)
+            average_engagement_score_course = df_features_professor_courses.groupby('course_fullname')['engagement_per_day'].mean().reset_index(name='AverageEngagementScore')
+            
+            last_activity_date_course = filtered_logs_for_professor.groupby('course_fullname')['time_dt'].max().reset_index(name='LastActivityDate')
+
+            all_professor_courses_df = pd.DataFrame(professor_courses, columns=['course_fullname'])
+
+            merged_summaries = pd.merge(all_professor_courses_df, students_in_course_raw, on='course_fullname', how='left').fillna({'StudentsInCourse': 0})
+            merged_summaries = pd.merge(merged_summaries, students_at_risk_in_course, on='course_fullname', how='left').fillna({'StudentsAtRiskInCourse': 0})
+            merged_summaries = pd.merge(merged_summaries, average_engagement_score_course, on='course_fullname', how='left').fillna({'AverageEngagementScore': 0.0})
+            merged_summaries = pd.merge(merged_summaries, last_activity_date_course, on='course_fullname', how='left')
+
+            for _, row in merged_summaries.iterrows():
+                course_summaries_list.append({
+                    "CourseName": row['course_fullname'],
+                    "StudentsInCourse": int(row['StudentsInCourse']),
+                    "StudentsAtRiskInCourse": int(row['StudentsAtRiskInCourse']),
+                    "AverageEngagementScore": round(row['AverageEngagementScore'], 2),
+                    "LastActivityDate": row['LastActivityDate'].isoformat() if pd.notna(row['LastActivityDate']) else "N/A"
+                })
+        else:
+            course_summaries_list = []
+
+        # --- Atividades Recentes ---
+        recent_activities_data = []
+        user_ids_in_module = filtered_logs_for_professor['user_id'].unique().tolist() if not filtered_logs_for_professor.empty else []
+
+        if not df_raw_logs_cache.empty and len(user_ids_in_module) > 0: 
+            recent_logs_for_display = df_raw_logs_cache[
+                df_raw_logs_cache['user_id'].isin(user_ids_in_module) &
+                (df_raw_logs_cache['time_dt'] >= current_module_info_start_date) &
+                (df_raw_logs_cache['time_dt'] <= current_module_info_end_date)
+            ]
+
+            if not recent_logs_for_display.empty:
+                recent_logs_for_display = recent_logs_for_display.sort_values(by='time_dt', ascending=False).head(50)
+
+                for _, log in recent_logs_for_display.iterrows():
+                    action_info = log.get('action', 'Ação Desconhecida').capitalize()
+                    target_info = log.get('target', '').capitalize()
+                    user_name_info = str(log.get('user_name', log.get('user_id', 'Desconhecido'))) 
+
+                    if target_info:
+                        nome_atividade = f"{action_info} {target_info}"
+                    else:
+                        nome_atividade = action_info
+                    
+                    status_amigavel = "N/A" 
+                    if action_info == "Graded":
+                        status_amigavel = "Concluída" 
+                    elif action_info == "Submitted":
+                        status_amigavel = "Submetida"
+                    elif action_info == "Started":
+                        status_amigavel = "Em Andamento"
+                    
+                    recent_activities_data.append({
+                        "Acao": nome_atividade,
+                        "Status": status_amigavel,
+                        "DataHora": log['time_dt'].isoformat(),
+                        "Usuario": user_name_info 
+                    })
+            else:
+                current_app.logger.debug(f"[{datetime.now()}] Nenhum log recente encontrado para exibição no módulo atual.")
+        else:
+            current_app.logger.debug(f"[{datetime.now()}] Sem dados para atividades recentes (cache vazio ou sem user_ids).")
+
+        current_app.logger.debug(f"[{datetime.now()}] Atividades recentes geradas para {len(recent_activities_data)} atividades.")
+
+        # --- Calcular EvasionRiskCount e StudentEvasionList para o novo dashboard de evasão ---
+        evasion_risk_count = students_at_risk_df_filtered['user_id'].nunique() if not students_at_risk_df_filtered.empty else 0
+        
+        student_evasion_list = []
+        if not students_at_risk_df_filtered.empty and not df_features_cache.empty:
+            merged_evasion_data = pd.merge(
+                students_at_risk_df_filtered[['user_id', 'user_name', 'evasion_probability_ml']],
+                df_features_cache[['user_id', 'course_fullname', 'overall_last_access_days_ago', 'course_activity_count']],
+                on='user_id',
+                how='inner' 
+            )
+            merged_evasion_data = merged_evasion_data.groupby('user_id').agg(
+                user_name=('user_name', 'first'),
+                evasion_probability=('evasion_probability_ml', 'max'),
+                days_without_access=('overall_last_access_days_ago', 'max'), 
+                total_accesses=('course_activity_count', 'sum') 
+            ).reset_index()
+
+
+            for _, student_row in merged_evasion_data.iterrows():
+                student_evasion_list.append({
+                    "StudentName": student_row['user_name'],
+                    "TotalAccesses": int(student_row['total_accesses']),
+                    "DaysWithoutAccess": int(student_row['days_without_access']),
+                    "EvasionProbability": int(round(student_row['evasion_probability'] * 100)) 
+                })
+        
+        current_app.logger.debug(f"[{datetime.now()}] Alunos em risco para lista de evasão: {len(student_evasion_list)}")
+
+        # --- Prepara e Retorna a resposta JSON final ---
+        response_data = {
+            "professorNome": professor_id,
+            "totalStudents": total_students,
+            "studentsAtRisk": students_at_risk,
+            "totalActivities": total_activities, 
+            "currentModuleInfo": {
+                "number": current_module_info["module_number"],
+                "start_date": current_module_info["start_date"].isoformat(),
+                "end_date": current_module_info["end_date"].isoformat(),
+                "display_name": current_module_info["display_name"]
+            },
+            "courseSummaries": course_summaries_list,
+            "recentActivities": recent_activities_data,
+            "evasionRiskCount": evasion_risk_count, 
+            "studentEvasionList": student_evasion_list 
+        }
+
+        current_app.logger.debug(f"[{datetime.now()}] Dados de resposta final: {json.dumps(response_data, indent=2, default=str)}")
+        return jsonify(response_data)
+
+    except Exception as e:
+        current_app.logger.error(f"[{datetime.now()}] Erro inesperado na função get_professor_dashboard_data: {e}", exc_info=True)
+        return jsonify({"error": "Erro interno do servidor Flask", "details": str(e)}), 500
