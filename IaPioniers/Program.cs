@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using IaPioniers.Data;
 using IaPioniers.Models;
-using IaPioniers.Models.Models_DB; 
+
+using IaPioniers.Models.Models_DB;
 using System.Net.Http;
-using System;
-using Microsoft.Extensions.Logging; 
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// --- ConfiguraÃ§Ã£o da ConexÃ£o com o Banco de Dados ---
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -30,68 +31,60 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// --- Configuração de Logging (Já está OK, só reorganizando) ---
+
+// --- ConfiguraÃ§Ã£o de Logging ---
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Logging.SetMinimumLevel(LogLevel.Debug); 
 
-// --- Injeção de Dependência de Serviços ---
 
-// Serviço para mapeamento Professor-Curso (Singletone é OK, pois os dados são estáticos ou carregados uma vez)
+
+// --- InjeÃ§Ã£o de DependÃªncia de ServiÃ§os ---
 builder.Services.AddSingleton<ProfessorCourseMappingService>();
 
-// Configuração para o HttpClient que será injetado em ProfessorDashboardService
-// USAR A URL DO APPSETTINGS.JSON para flexibilidade
+
+// ConfiguraÃ§Ã£o para o HttpClient que serÃ¡ injetado em ProfessorDashboardService
 builder.Services.AddHttpClient<IProfessorDashboardService, ProfessorDashboardService>(client =>
 {
-    // Acessa a URL base da API Python do appsettings.json
-    // Use "PythonApiBaseUrl" ou o nome da sua chave no appsettings.json
+    // CORREÃ‡ÃƒO AQUI: Acessa a URL base da API Python do appsettings.json com a chave correta
+
     var pythonApiBaseUrl = builder.Configuration["PythonApiBaseUrl"];
+
     if (string.IsNullOrEmpty(pythonApiBaseUrl))
     {
-        // Se a chave não for encontrada, use um fallback e logue um erro
-        client.BaseAddress = new Uri("http://127.0.0.1:5000/api/"); // Fallback
-        builder.Logging.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>()
-            .LogError("PythonApiBaseUrl não configurada em appsettings.json. Usando fallback: http://127.0.0.1:5000/api/");
+
+        // Fallback: Se a chave nÃ£o for encontrada/configurada, usa um endereÃ§o padrÃ£o.
+        client.BaseAddress = new Uri("http://localhost:5000/"); // Garantir que termina com '/'
+
     }
     else
     {
+        // Se a chave for encontrada, define o BaseAddress.
         client.BaseAddress = new Uri(pythonApiBaseUrl);
-        builder.Logging.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>()
-            .LogInformation($"HttpClient para IProfessorDashboardService configurado com BaseAddress: {pythonApiBaseUrl}");
     }
+
+
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
-// Adicione aqui a configuração para IaPioniersApiService se ela for diferente e necessária
-// (Se essa API é para outro propósito, mantenha-a separada. Se for o mesmo que IProfessorDashboardService, remova a duplicação)
-/*
-builder.Services.AddHttpClient<IaPioniersApiService>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["PythonApiSettings:BaseUrl"] ?? "http://127.0.0.1:5000");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
-*/
+// HttpClient genÃ©rico para controllers como RelatorioController
+builder.Services.AddHttpClient();
 
-// Adiciona suporte a controladores MVC (com Views)
+
 builder.Services.AddControllersWithViews();
-// Adiciona suporte a Razor Pages (se você as usa)
 builder.Services.AddRazorPages();
 
-// --- Construção do Aplicativo ---
+// --- Pipeline HTTP ---
 var app = builder.Build();
 
-// --- Configuração do Pipeline de Requisições HTTP ---
-
-// Configura o middleware de tratamento de exceções para ambiente de Desenvolvimento
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage(); // Exibe erros detalhados em dev
+    app.UseDeveloperExceptionPage();
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error"); // Redireciona para /Home/Error em produção
+    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
@@ -103,20 +96,16 @@ app.UseRouting();
 app.UseAuthentication();  
 app.UseAuthorization();   
 
+
 // --- Mapeamento de Rotas ---
 
-// Mapeia rotas de controladores MVC (com views)
-// Esta rota padrão deve encontrar ProfessorDashboardController
+
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}"); // Alterado para Account e Login
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
-// Mapeia rotas de Razor Pages (se você as usa)
 app.MapRazorPages();
 
-// Mapeia rotas para controladores com o atributo [ApiController] (se houver APIs RESTful)
-// Geralmente vem DEPOIS das rotas MVC tradicionais, ou você as separa claramente.
-// Se seu ProfessorDashboardController NÃO tem [ApiController], esta linha não o afetaria.
 app.MapControllers();
 
 app.Run();

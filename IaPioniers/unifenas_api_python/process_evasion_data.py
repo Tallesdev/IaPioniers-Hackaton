@@ -155,43 +155,12 @@ def process_moodle_logs_for_evasion(df_raw_logs: pd.DataFrame, inactivity_thresh
     df_features = pd.merge(df_features, quiz_attempts, on='user_id', how='left')
     df_features = pd.merge(df_features, resource_access_types, on=['user_id', 'course_fullname'], how='left')
 
-    # --- FEATURES MAIS COMPLEXAS (LÓGICA SIMPLIFICADA OU DEFAULT) ---
-    # A implementação completa dessas features exige mais dados e lógica de negócios (ciclos acadêmicos, etc.)
-    # Para fins de teste e demonstração, vamos dar valores padrão ou lógicas muito simplificadas.
-
-    # is_in_first_activity_cycle_no_submission (Exemplo simplificado: nenhum submission no curso nos primeiros 7 dias)
-    # Requer que você tenha uma forma de identificar a "primeira atividade" ou "ciclo"
-    # Placeholder: assume False por padrão ou True para alunos com 0 atividades nos primeiros dias do curso.
-    # Esta feature é difícil de calcular sem um contexto de "ciclo" e "atividades de submissão"
-    # Vamos defini-la como False por padrão, e você pode refinar.
-    df_features['is_in_first_activity_cycle_no_submission'] = False
-    # Exemplo de lógica simplificada para fins de teste/demo (requer df_raw_logs com eventnames de submissão):
-    # alunos_sem_submissao_primeiros_dias = df_raw_logs[
-    #     (df_raw_logs['date'] - df_raw_logs.groupby('user_id')['date'].transform('min')).dt.days <= 7
-    # ].groupby('user_id').apply(lambda x: not x['action'].str.contains('submitted|graded').any())
-    # df_features['is_in_first_activity_cycle_no_submission'] = df_features['user_id'].isin(alunos_sem_submissao_primeiros_dias[alunos_sem_submissao_primeiros_dias].index)
-
-
-    # has_recent_visual_interaction_in_cycle (Ligado à feature acima)
-    # Placeholder: True por padrão, a menos que você tenha uma forma de identificar.
-    df_features['has_recent_visual_interaction_in_cycle'] = True 
-    # Exemplo de lógica simplificada (requer df_raw_logs com actions de visualização):
-    # visual_interaction_types = ['viewed', 'accessed']
-    # has_visual_interaction = df_raw_logs[
-    #     df_raw_logs['action'].isin(visual_interaction_types)
-    # ].groupby('user_id').size() > 0
-    # df_features['has_recent_visual_interaction_in_cycle'] = df_features['user_id'].map(has_visual_interaction).fillna(False)
-
-
-    # has_falling_trend_90_days (Muito complexo, requer série temporal de logs)
-    # Placeholder: False por padrão.
-    df_features['has_falling_trend_90_days'] = False
-    # Exemplo (muito simplificado, não recomendado para produção sem mais dados):
-    # if 'daily_activity_count' in df_raw_logs.columns: # Você precisaria gerar isso primeiro
-    #     df_features['has_falling_trend_90_days'] = df_raw_logs.groupby('user_id')['daily_activity_count'].apply(
-    #         lambda x: len(x) >= 90 and x.tail(30).mean() < x.head(30).mean() # Média dos últimos 30 dias < primeiros 30
-    #     ).fillna(False)
-
+    # --- FEATURES MAIS COMPLEXAS (AGORA CALCULADAS EM feature_engineering.py) ---
+    # REMOVIDO: df_features['is_in_first_activity_cycle_no_submission'] = False
+    # REMOVIDO: df_features['has_recent_visual_interaction_in_cycle'] = True
+    # REMOVIDO: df_features['has_falling_trend_90_days'] = False
+    # Essas features agora virão do run_feature_engineering que é chamado por predict_evasion.py
+    # e que, por sua vez, usa academic_calendar_utils.py para o cálculo.
 
     # --- Lidar com NaNs que possam surgir de merges ou cálculos ---
     # Preencher NaNs em colunas numéricas com 0 (ou um valor mais apropriado)

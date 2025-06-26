@@ -17,15 +17,23 @@
         </div>
     </header>
 
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="error-message">
+            <p><strong>Erro:</strong> @ViewBag.ErrorMessage</p>
+        </div>
+    }
+
     <section class="cards">
         @* CARD 1: Atividades *@
         <div class="card card-activities">
             <div class="card-icon"><i class="fas fa-tasks"></i></div>
             <div class="card-content">
                 <span class="card-number">@Model.TotalActivities</span>
-                <p class="card-title">Total de Ações</p>
+
+                <p class="card-title">Ações</p>
             </div>
-            <button class="card-button primary">Ver Ações</button>
+
         </div>
 
         @* CARD 2: Turma A - Dinâmico com o primeiro curso (se houver) *@
@@ -38,7 +46,7 @@
                     <span class="card-title">@firstCourse.CourseName</span>
                     <p class="card-details">@firstCourse.StudentsInCourse alunos</p>
                 </div>
-                <button class="card-button secondary">Ver turmas</button>
+                <a asp-controller="Turmas" asp-action="Index" class="card-button secondary">Ver turmas</a>
             </div>
         }
         else
@@ -49,7 +57,7 @@
                     <span class="card-title">Nenhuma Turma</span>
                     <p class="card-details">Nenhum aluno</p>
                 </div>
-                <button class="card-button secondary">Ver turmas</button>
+                <a asp-controller="Turmas" asp-action="Index" class="card-button secondary">Ver turmas</a>
             </div>
         }
 
@@ -60,18 +68,20 @@
                 <span class="card-number">@Model.TotalStudents</span>
                 <p class="card-title">Resumo das Turmas</p>
             </div>
-            <button class="card-button primary">Gerar Relatório</button>
+
+            <a asp-controller="ProfessorDashboard" class="card-button primary" asp-action="ResumoDeDados" asp-route-professorId="@Model.ProfessorNome" class="button-link">Gerar Relatório</a>
+
         </div>
     </section>
 
     <section class="recent-activities-table">
-        <h3>Atividades Recentes</h3>
+        <h3>Ações Recentes</h3>
         @if (Model.RecentActivities != null && Model.RecentActivities.Any())
         {
             <table>
                 <thead>
                     <tr>
-                        <th>Atividade</th>
+                        <th>Ações</th>
                         <th>Aluno</th>
                         <th>Status</th>
                         <th>Data</th>
@@ -97,6 +107,9 @@
                                             case "andamento":
                                                 statusClass = "status-andamento";
                                                 break;
+                                            case "submetida": // Adicionei 'submetida' se a API retornar isso
+                                                statusClass = "status-andamento"; // Pode ser o mesmo de 'em andamento'
+                                                break;
                                             default:
                                                 statusClass = "status-default";
                                                 break;
@@ -105,7 +118,8 @@
                                 }
                                 <span class="status-dot @statusClass"></span> @statusText
                             </td>
-                            <td>@atividade.DataHora.ToString("dd 'de' MMMM 'de' yyyy")</td>
+                            @* CORREÇÃO AQUI: Garante que DataHora é DateTime antes de formatar *@
+                            <td>@(atividade.DataHora != DateTime.MinValue ? atividade.DataHora.ToString("dd 'de' MMMM 'às' HH:mm") : "N/A")</td>
                         </tr>
                     }
                 </tbody>
@@ -113,7 +127,7 @@
         }
         else
         {
-            <p>Nenhuma atividade recente disponível no módulo.</p>
+            <p class="no-data-message">Nenhuma atividade recente disponível no módulo.</p>
         }
     </section>
 </div>

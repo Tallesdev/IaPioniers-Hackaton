@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="utf-8" />
@@ -7,13 +8,10 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-    @* <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" /> *@
-    @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
-
-    <link rel="stylesheet" href="~/IaPioniers.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
         /* Estilos Reset e base */
@@ -67,29 +65,29 @@
             padding: 0 20px;
         }
 
-         .sidebar-nav .nav-item {
-             display: flex;
-             align-items: center;
-             padding: 15px 20px;
-             margin-bottom: 8px;
-             color: #ecf0f1;
-             text-decoration: none;
-             font-size: 1.1em;
-             border-radius: 8px;
-             transition: background-color 0.3s ease, color 0.3s ease;
-         }
+            .sidebar-nav .nav-item {
+                display: flex;
+                align-items: center;
+                padding: 15px 20px;
+                margin-bottom: 8px;
+                color: #ecf0f1;
+                text-decoration: none;
+                font-size: 1.1em;
+                border-radius: 8px;
+                transition: background-color 0.3s ease, color 0.3s ease;
+            }
 
-         .sidebar-nav .nav-item i {
-             margin-right: 15px;
-             font-size: 1.2em;
-         }
+                .sidebar-nav .nav-item i {
+                    margin-right: 15px;
+                    font-size: 1.2em;
+                }
 
-         .sidebar-nav .nav-item:hover,
-         .sidebar-nav .nav-item.active {
-              background-color: #34495e;
-              color: #3498db;
-              font-weight: 500;
-         }
+                .sidebar-nav .nav-item:hover,
+                .sidebar-nav .nav-item.active {
+                    background-color: #34495e;
+                    color: #3498db;
+                    font-weight: 500;
+                }
 
         .sidebar-footer {
             padding: 20px 20px 0px;
@@ -113,13 +111,13 @@
 			
 		}
 
-        .logout-btn i {
-           margin-right: 10px;
-        }
+            .logout-btn i {
+                margin-right: 10px;
+            }
 
-        .logout-btn:hover {
-           background-color: #c0392b;
-        }
+            .logout-btn:hover {
+                background-color: #c0392b;
+            }
 
 
         /* Container principal do conteúdo (tudo à direita da sidebar) */
@@ -159,11 +157,62 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    @* Inclui a barra lateral aqui *@
-    @Html.Partial("_NavHeader")
+
+      @* Injeta UserManager e SignInManager para acessar dados do usuário logado *@
+    @using Microsoft.AspNetCore.Identity
+    @using IaPioniers.Models
+    @inject UserManager<ApplicationUser> UserManager
+    @inject SignInManager<ApplicationUser> SignInManager
+
+    @{
+        string professorNome = null;
+        if (SignInManager.IsSignedIn(User))
+        {
+            var currentUser = await UserManager.GetUserAsync(User);
+            if (currentUser != null)
+            {
+                professorNome = currentUser.NomeCompleto;
+            }
+        }
+    }
+    <div class="sidebar">
+        <div class="logo-atena">ATENA</div>
+        <ul class="nav-list">
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" ? "active" : "")" asp-area="" asp-controller="Dashboard" asp-action="Index">
+                    <i class="fas fa-home"></i>
+                    <span>Início</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Students" ? "active" : "")"
+                   asp-area=""
+                   asp-controller="Students"
+                   asp-action="Index"
+                   asp-route-professorId="@professorNome">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Alunos</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Turmas" ? "active" : "")" asp-area="" asp-controller="Turmas" asp-action="Index">
+                    <i class="fas fa-users"></i>
+                    <span>Turmas</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Configurations" ? "active" : "")" asp-area="" asp-controller="Configurations" asp-action="Index">
+                    <i class="fas fa-cog"></i>
+                    <span>Configurações</span>
+                </a>
+            </li>
+        </ul>
+        <div class="logout-button">
+            <a asp-area="" asp-controller="Account" asp-action="Logout">Sair</a>
+        </div>
+    </div>
 
     <div class="main-layout-wrapper">
-        @* Conteúdo principal das Views será renderizado aqui *@
         <div class="main-content-area">
             @RenderBody()
         </div>
@@ -178,6 +227,34 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Theme application function
+        function applyTheme(theme) {
+            const body = document.body;
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+            } else {
+                body.classList.remove('dark-theme');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const themeKey = 'user-theme';
+            const savedTheme = localStorage.getItem(themeKey);
+
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    applyTheme('dark');
+                } else {
+                    applyTheme('light');
+                }
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

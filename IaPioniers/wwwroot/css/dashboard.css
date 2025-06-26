@@ -1,24 +1,184 @@
-﻿
-/* Estilos para o conteúdo principal do dashboard */
+
+﻿ /* wwwroot/css/dashboard.css */
+/* ========================================================== */
+/* 1. VARIÁVEIS CSS (CUSTOM PROPERTIES) PARA TEMAS CLARO E ESCURO */
+/* ========================================================== */
+:root {
+    /* Cores do Tema Claro (Padrão) */
+    --bg-primary: #f4f7f6; /* Cor de fundo principal da body */
+    --bg-secondary: #ffffff; /* Cor de fundo de cards, seções, inputs */
+    --text-primary: #34495e; /* Cor do texto principal */
+    --text-secondary: #7f8c8d; /* Cor do texto secundário/descrições */
+    --text-light: #ecf0f1; /* Cor do texto claro (para botões em BG escuro) */
+    --border-color: #eee; /* Cor da borda para divisórias, inputs */
+    --shadow-color: rgba(0, 0, 0, 0.1); /* Cor da sombra */
+    /* Cores de Acento */
+    --accent-blue: #3498db; /* Azul primário (botões, ícones, destaques) */
+    --accent-dark-blue: #2980b9; /* Azul primário mais escuro (hover) */
+    --accent-green: #2ecc71; /* Verde de sucesso (status, botões) */
+    --accent-red: #e74c3c; /* Vermelho de perigo/erro (status, botões) */
+    --accent-orange: #f39c12; /* Laranja para atraso */
+    /* Cores Específicas de Componentes (Tema Claro) */
+    --sidebar-bg: #2c3e50; /* Fundo da barra lateral */
+    --sidebar-text: #ecf0f1; /* Texto da barra lateral */
+    --sidebar-hover-bg: #34495e; /* Hover da barra lateral */
+    --header-bg: #ffffff; /* Fundo do cabeçalho */
+    --header-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Sombra do cabeçalho */
+    --table-header-bg: #f2f4f6; /* Fundo dos cabeçalhos de tabela */
+    /* Status específicos (mantidos com cor fixa se você não quiser que mudem com o tema) */
+    --status-participando: #27ae60;
+    --status-inativo: #e74c3c;
+    --status-atrasado: #f39c12;
+    --status-concluida: #27ae60;
+    --status-andamento: #3498db; /* Azul do tema claro */
+    --status-default: #95a5a6;
+}
+
+/* Estilos para o tema escuro */
+body.dark-theme {
+    /* Cores do Tema Escuro */
+    --bg-primary: #2c3e50;
+    --bg-secondary: #34495e;
+    --text-primary: #ecf0f1;
+    --text-secondary: #bdc3c7;
+    --text-light: #34495e; /* Texto claro para BG escuro do tema claro, agora escuro para BG claro do tema escuro */
+    --border-color: #3f5870;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    /* Cores de Acento (ajustadas para o tema escuro) */
+    --accent-blue: #5faee8; /* Azul mais claro para o tema escuro */
+    --accent-dark-blue: #4a90d0;
+    /* Verde e Vermelho podem ser os mesmos ou ligeiramente ajustados se necessário */
+    --accent-green: #2ecc71;
+    --accent-red: #e74c3c;
+    --accent-orange: #f39c12;
+    /* Cores Específicas de Componentes (Tema Escuro) */
+    --sidebar-bg: #22303c; /* Fundo da barra lateral mais escuro */
+    --sidebar-text: #ecf0f1;
+    --sidebar-hover-bg: #34495e;
+    --header-bg: #34495e;
+    --header-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    --table-header-bg: #3f5870; /* Fundo dos cabeçalhos de tabela no tema escuro */
+    /* Status (azuis podem precisar de ajuste) */
+    --status-andamento: #5faee8; /* Azul ajustado para escuro */
+}
+
+/* ========================================================== */
+/* 2. ESTILOS GLOBAIS - APLICANDO AS VARIÁVEIS */
+/* ========================================================== */
+
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-primary); /* USANDO A VARIÁVEL */
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Transição suave para tema */
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg); /* USANDO A VARIÁVEL */
+    color: var(--sidebar-text); /* USANDO A VARIÁVEL */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px var(--shadow-color); /* USANDO A VARIÁVEL */
+}
+
+    .sidebar .logo {
+        font-size: 1.8em;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 40px;
+        color: var(--sidebar-text); /* USANDO A VARIÁVEL */
+    }
+
+    .sidebar .nav-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        flex-grow: 1;
+    }
+
+    .sidebar .nav-item {
+        margin-bottom: 10px;
+    }
+
+    .sidebar .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-radius: 8px;
+        color: var(--sidebar-text); /* USANDO A VARIÁVEL */
+        text-decoration: none;
+        font-size: 1.1em;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: var(--sidebar-hover-bg); /* USANDO A VARIÁVEL */
+            color: var(--accent-blue); /* USANDO A VARIÁVEL */
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 15px;
+            font-size: 1.3em;
+        }
+
+    .sidebar .logout-button {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+        .sidebar .logout-button a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--accent-red); /* USANDO A VARIÁVEL */
+            color: var(--text-light); /* USANDO A VARIÁVEL */
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+            .sidebar .logout-button a:hover {
+                background-color: #c0392b; /* Mantido fixo ou pode ser uma nova variável */
+            }
+
+/* ========================================================== */
+/* 3. ESTILOS DO CONTEÚDO PRINCIPAL (DASHBOARD ESPECÍFICO) */
+/* ========================================================== */
+
 .main-content {
     flex-grow: 1;
-    padding: 30px; /* Padding maior */
-    background-color: #f8f9fa; /* Cor de fundo sutil para o main content */
-   
+    padding: 30px;
+    background-color: var(--bg-primary); /* USANDO A VARIÁVEL */
+    min-height: 100vh;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+    transition: background-color 0.3s ease, color 0.3s ease;
+
 }
 
 .top-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 40px; /* Mais espaço abaixo do cabeçalho */
+    margin-bottom: 40px;
     padding-bottom: 20px;
-    border-bottom: 1px solid #e0e0e0; /* Linha sutil para separar o header */
+    border-bottom: 1px solid var(--border-color); /* USANDO A VARIÁVEL */
+    background-color: var(--header-bg); /* USANDO A VARIÁVEL */
+    border-radius: 15px; /* Adicionado para consistência com outros cards */
+    padding: 20px 30px; /* Adicionado para consistência */
+    box-shadow: var(--header-shadow); /* USANDO A VARIÁVEL */
 }
 
     .top-header h1 {
-        font-size: 2.2em; /* Título maior */
-        color: #34495e;
+        font-size: 2.2em;
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
         margin: 0;
         font-weight: 700;
     }
@@ -31,65 +191,63 @@
     .user-profile .user-name {
         font-size: 1.1em;
         font-weight: 600;
-        color: #555;
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
         margin-right: 15px;
     }
 
     .user-profile .user-avatar {
-        width: 50px; /* Tamanho do avatar */
+        width: 50px;
         height: 50px;
-        border-radius: 50%; /* Circular */
+        border-radius: 50%;
         object-fit: cover;
-        border: 2px solid #3498db; /* Borda colorida */
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        border: 2px solid var(--accent-blue); /* USANDO A VARIÁVEL */
+        box-shadow: 0 2px 5px var(--shadow-color); /* USANDO A VARIÁVEL */
     }
 
 .cards {
     display: grid;
-    /* Para 3 colunas em telas grandes, e responsivo */
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Mantido para responsividade */
-    gap: 30px; /* Espaço entre os cards */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
     margin-bottom: 40px;
 }
 
 .card {
-    background-color: #fff; /* Padrão, será sobrescrito pelos cards específicos */
-    border-radius: 15px; /* Bordas mais arredondadas */
-    padding: 30px; /* Padding generoso */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* Sombra mais destacada */
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 25px var(--shadow-color); /* USANDO A VARIÁVEL */
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* Alinha o conteúdo à esquerda */
+    align-items: flex-start;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    color: #34495e; /* Cor do texto padrão para cards */
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
 }
 
     .card:hover {
-        transform: translateY(-5px); /* Efeito de "levantar" */
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        transform: translateY(-5px);
+        box-shadow: 0 12px 35px var(--shadow-color); /* USANDO A VARIÁVEL */
     }
 
-/* Estilos gerais para botões dentro dos cards */
 .card-button {
-    padding: 12px 25px; /* Ajuste para ter um bom tamanho */
-    border: none; /* A borda será definida pelos cards específicos */
-    border-radius: 50px; /* Bordas arredondadas para um visual de pílula */
+    padding: 12px 25px;
+    border: none;
+    border-radius: 50px;
     cursor: pointer;
     font-size: 1em;
-    font-weight: 600; /* Mais negrito */
+    font-weight: 600;
     transition: background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease;
     text-transform: uppercase;
-    letter-spacing: 1px; /* Mais espaçamento para o texto */
-    display: block; /* Garante que o botão ocupe sua própria linha */
-    width: fit-content; /* Ajusta a largura ao conteúdo do botão */
-    white-space: nowrap; /* Evita que o texto quebre linha */
+    letter-spacing: 1px;
+    display: block;
+    width: fit-content;
+    white-space: nowrap;
 }
-
 
 /* --- ESTILOS ESPECÍFICOS DOS CARDS PARA BATER COM O PROTÓTIPO --- */
 
 /* Card de Atividades (primeiro card azul) */
 .card.card-activities {
+
     background-image: linear-gradient(135deg, #3498db 0%, #2980b9 100%); /* Gradiente azul do protótipo */
     color: white; /* Texto branco para contraste */
     align-items: flex-start;
@@ -97,25 +255,28 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    color: white; 
 }
 
     .card.card-activities .card-icon {
-        color: white; /* Ícone branco */
-        font-size: 2.8em; /* Ícone um pouco maior */
+        color: white;
+        font-size: 2.8em;
     }
 
     .card.card-activities .card-number {
-        color: white; /* Número branco */
-        font-size: 3.5em; /* Número maior */
+        color: white;
+        font-size: 3.5em;
     }
 
     .card.card-activities .card-title {
-        color: rgba(255, 255, 255, 0.8); /* Título ligeiramente transparente */
+        color: rgba(255, 255, 255, 0.8);
         font-size: 1.3em;
-        margin-bottom: 25px; /* Mais espaço para o botão */
+        margin-bottom: 25px;
+        text-align:center;
     }
 
     .card.card-activities .card-button.primary {
+
         /* ESTILO DO BOTÃO "VER ATIVIDADES" - FANTASMA BRANCO */
         background-color: transparent;
         border: 2px solid white;
@@ -129,66 +290,72 @@
         transition: background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease;
         text-transform: uppercase;
         letter-spacing: 1px;
+
     }
 
         .card.card-activities .card-button.primary:hover {
-            background-color: rgba(255, 255, 255, 0.2); /* Fundo sutil no hover */
+            background-color: rgba(255, 255, 255, 0.2);
             border-color: white;
         }
 
 /* Card do Meio (com a imagem do caderno) */
 .card.card-class {
-    background-color: #ffffff; /* Fundo branco para este card */
-    color: #34495e; /* Texto escuro */
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
     display: flex;
-    flex-direction: column; /* Itens empilhados verticalmente */
-    align-items: center; /* Centraliza itens horizontalmente */
-    justify-content: space-between; /* Espaça itens verticalmente */
-    text-align: center; /* Centraliza o texto */
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
 }
 
     .card.card-class .card-image {
         max-width: 100%;
         height: auto;
         display: block;
-        margin: 0 auto 15px auto; /* Centraliza e adiciona margem */
-        object-fit: contain; /* Garante que a imagem inteira seja visível */
-        max-height: 250px; /* Ajustado para um tamanho que se encaixe no protótipo */
+        margin: 0 auto 15px auto;
+        object-fit: contain;
+        max-height: 250px;
         width: auto;
     }
 
     .card.card-class .card-title {
-        font-size: 1.5em; /* Título maior */
+        font-size: 1.5em;
         font-weight: 600;
-        color: #34495e;
-        margin-bottom: 5px; /* Menos margem para os detalhes */
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
+        margin-bottom: 5px;
     }
 
     .card.card-class .card-details {
         font-size: 1.1em;
-        color: #7f8c8d;
-        margin-bottom: 25px; /* Mais espaço para o botão */
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
+        margin-bottom: 25px;
     }
 
     .card.card-class .card-button.secondary {
-        /* ESTILO DO BOTÃO "VER TURMAS" - CLARO COM TEXTO ESCURO */
-        background-color: #ecf0f1; /* Fundo cinza claro */
-        color: #34495e; /* Texto azul escuro */
-        border: none; /* Sem borda, apenas sombra suave */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra para destacá-lo */
+        background-color: var(--bg-primary); /* USANDO A VARIÁVEL */
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
+        border: none;
+        box-shadow: 0 4px 8px var(--shadow-color); /* USANDO A VARIÁVEL */
     }
 
         .card.card-class .card-button.secondary:hover {
-            background-color: #dbe4e6;
+            background-color: var(--border-color); /* Uma cor um pouco diferente no hover, ou uma nova variável */
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Sombra mais pronunciada no hover */
+            box-shadow: 0 6px 12px var(--shadow-color); /* USANDO A VARIÁVEL */
         }
+/* No tema escuro, o hover do card-class .card-button.secondary pode precisar de um ajuste manual */
+body.dark-theme .card.card-class .card-button.secondary:hover {
+    background-color: var(--border-color); /* Use a border-color do tema escuro */
+}
+
 
 /* Card de Resumo das Turmas (terceiro card azul) */
 .card.card-summary {
-    background-image: linear-gradient(135deg, #3498db 0%, #2980b9 100%); /* Mesmo gradiente azul */
-    color: white; /* Texto branco */
-    align-items: flex-start; /* Alinhamento esquerdo */
+    background-image: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-dark-blue) 100%); /* USANDO VARIÁVEIS */
+    color: white;
+    align-items: center;
+    justify-content:center;
 }
 
     .card.card-summary .card-icon {
@@ -199,39 +366,44 @@
     .card.card-summary .card-number {
         color: white;
         font-size: 3.5em;
+        padding:48px;
     }
 
     .card.card-summary .card-title {
         color: rgba(255, 255, 255, 0.8);
         font-size: 1.3em;
         margin-bottom: 25px;
+        
     }
 
     .card.card-summary .card-button.primary {
-        /* ESTILO DO BOTÃO "GERAR RELATÓRIO" - FANTASMA BRANCO */
-        background-color: transparent; /* Fundo transparente */
-        border: 2px solid white; /* Borda branca sólida */
-        color: white; /* Texto branco */
+        background-color: transparent;
+        border: 2px solid white;
+        color: white;
+        text-decoration:none;
     }
 
         .card.card-summary .card-button.primary:hover {
-            background-color: rgba(255, 255, 255, 0.2); /* Fundo sutil no hover */
+            background-color: rgba(255, 255, 255, 0.2);
             border-color: white;
         }
 
+/* ========================================================== */
+/* 4. ESTILOS DE TABELAS (RECENT ACTIVITIES) */
+/* ========================================================== */
 
-/* Estilos para a seção de atividades recentes */
 .recent-activities-table {
-    background-color: #fff;
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
     border-radius: 15px;
     padding: 30px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    margin-top: 40px; /* Adiciona um espaço acima da tabela para separação dos cards */
+    box-shadow: 0 8px 25px var(--shadow-color); /* USANDO A VARIÁVEL */
+    margin-top: 40px;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
 }
 
     .recent-activities-table h3 {
         font-size: 1.8em;
-        color: #34495e;
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
         margin-bottom: 25px;
         font-weight: 600;
     }
@@ -245,24 +417,24 @@
     .recent-activities-table td {
         padding: 15px;
         text-align: left;
-        border-bottom: 1px solid #eee; /* Linhas de grade suaves */
+        border-bottom: 1px solid var(--border-color); /* USANDO A VARIÁVEL */
     }
 
     .recent-activities-table th {
-        background-color: #f2f4f6; /* Fundo suave para o cabeçalho da tabela */
-        color: #555;
+        background-color: var(--table-header-bg); /* USANDO A VARIÁVEL */
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
         font-weight: 600;
         text-transform: uppercase;
         font-size: 0.95em;
     }
 
     .recent-activities-table td {
-        color: #666;
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
         font-size: 1em;
     }
 
     .recent-activities-table tbody tr:hover {
-        background-color: #fcfcfc; /* Leve destaque no hover da linha */
+        background-color: var(--bg-primary); /* USANDO A VARIÁVEL */
     }
 
 /* Estilos para os "dots" de status */
@@ -276,93 +448,44 @@
 }
 
 .status-concluida {
-    background-color: #27ae60; /* Verde para concluída */
+    background-color: var(--status-concluida);
 }
 
 .status-andamento {
-    background-color: #3498db; /* Azul para em andamento */
+    background-color: var(--status-andamento);
 }
 
 .status-default {
-    background-color: #95a5a6; /* Cinza para outros status */
+    background-color: var(--status-default);
 }
 
-/* Responsividade */
-@media (max-width: 768px) {
-    .top-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .user-profile {
-        margin-top: 15px;
-    }
-
-    .cards {
-        grid-template-columns: 1fr; /* Em telas pequenas, cards empilham */
-    }
-
-    .card {
-        padding: 25px;
-    }
-
-    .recent-activities-table {
-        padding: 20px;
-    }
-
-        .recent-activities-table th,
-        .recent-activities-table td {
-            padding: 12px;
-            font-size: 0.9em;
-        }
-}
-
-@media (max-width: 480px) {
-    .main-content {
-        padding: 20px;
-    }
-
-    .top-header h1 {
-        font-size: 1.8em;
-    }
-
-    .card-number {
-        font-size: 3em;
-    }
-
-    .card-title {
-        font-size: 1.1em;
-    }
-
-    .card-button {
-        padding: 10px 20px;
-        font-size: 0.9em;
-    }
-}
+/* ========================================================== */
+/* 5. ESTILOS DE FERRAMENTAS DE PÁGINA (PAGE TOOLS) */
+/* ========================================================== */
 
 .page-tools {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    flex-wrap: wrap; /* Permite que os itens quebrem linha em telas pequenas */
-    gap: 20px; /* Espaço entre os elementos */
+    flex-wrap: wrap;
+    gap: 20px;
 }
 
 .search-box {
     display: flex;
     align-items: center;
-    flex-grow: 1; /* Permite que a caixa de busca cresça */
-    max-width: 400px; /* Limita a largura máxima da busca */
-    background-color: #fff;
+    flex-grow: 1;
+    max-width: 400px;
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
     border-radius: 8px;
     padding: 10px 15px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 10px var(--shadow-color); /* USANDO A VARIÁVEL */
+    border: 1px solid var(--border-color); /* USANDO A VARIÁVEL */
 }
 
 .search-icon {
-    color: #7f8c8d;
+    color: var(--text-secondary); /* USANDO A VARIÁVEL */
     margin-right: 10px;
     font-size: 1.1em;
 }
@@ -373,11 +496,12 @@
     flex-grow: 1;
     padding: 5px 0;
     font-size: 1em;
-    color: #34495e;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+    background-color: transparent; /* Garante que não tenha fundo próprio e herde do search-box */
 }
 
     .search-input::placeholder {
-        color: #bdc3c7;
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
     }
 
 /* Estilos para o botão "Adicionar Novo" */
@@ -388,30 +512,30 @@
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    text-decoration: none; /* Para links que agem como botões */
-    display: inline-flex; /* Permite ícone e texto na mesma linha */
+    text-decoration: none;
+    display: inline-flex;
     align-items: center;
-    gap: 8px; /* Espaço entre ícone e texto */
+    gap: 8px;
+    border: none; /* Adicionado para garantir que o tema escuro não tenha borda extra */
 }
 
 .btn-primary {
-    background-color: #3498db; /* Azul primário */
-    color: white;
-    border: none;
-    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+    background-color: var(--accent-blue); /* USANDO A VARIÁVEL */
+    color: var(--text-light); /* USANDO A VARIÁVEL */
+    box-shadow: 0 4px 10px var(--shadow-color); /* USANDO A VARIÁVEL (ou uma específica para botões) */
 }
 
     .btn-primary:hover {
-        background-color: #2980b9;
+        background-color: var(--accent-dark-blue); /* USANDO A VARIÁVEL */
         transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
+        box-shadow: 0 6px 15px var(--shadow-color); /* USANDO A VARIÁVEL */
     }
 
 /* Mensagem de "Nenhum dado" na tabela */
 .no-data-message {
     text-align: center;
     padding: 30px;
-    color: #7f8c8d;
+    color: var(--text-secondary); /* USANDO A VARIÁVEL */
     font-style: italic;
 }
 
@@ -428,101 +552,86 @@
 }
 
     .action-btn.edit-btn {
-        color: #3498db; /* Azul para editar */
+        color: var(--accent-blue); /* USANDO A VARIÁVEL */
     }
 
         .action-btn.edit-btn:hover {
+            background-color: rgba(var(--accent-blue-rgb), 0.1); /* Precisaria de uma variável RGB */
+            /* Por simplicidade, vamos usar uma cor fixa transparente por enquanto */
             background-color: rgba(52, 152, 219, 0.1);
-            color: #2980b9;
+            color: var(--accent-dark-blue); /* USANDO A VARIÁVEL */
         }
-
-    .action-btn.delete-btn {
-        color: #e74c3c; /* Vermelho para excluir */
-    }
-
-        .action-btn.delete-btn:hover {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: #c0392b;
-        }
-
-/* Responsividade para a área de ferramentas */
-@media (max-width: 768px) {
-    .page-tools {
-        flex-direction: column; /* Empilha a busca e o botão */
-        align-items: flex-start; /* Alinha à esquerda */
-        gap: 15px;
-    }
-
-    .search-box {
-        max-width: 100%; /* Ocupa a largura total */
-    }
-
-    .btn {
-        width: 100%; /* Botão ocupa a largura total */
-        justify-content: center; /* Centraliza conteúdo do botão */
-    }
-        
+/* Correção para hover no tema escuro para edit-btn */
+body.dark-theme .action-btn.edit-btn:hover {
+    background-color: rgba(95, 174, 232, 0.15); /* Usando a cor do accent-blue do dark-theme */
+    color: var(--accent-dark-blue);
 }
 
 
+.action-btn.delete-btn {
+    color: var(--accent-red); /* USANDO A VARIÁVEL */
+}
+
+    .action-btn.delete-btn:hover {
+        background-color: rgba(231, 76, 60, 0.1);
+        color: #c0392b; /* Mantido fixo ou nova variável */
+    }
+/* Correção para hover no tema escuro para delete-btn */
+body.dark-theme .action-btn.delete-btn:hover {
+    background-color: rgba(231, 76, 60, 0.15);
+}
+
+
+/* ========================================================== */
+/* 6. ESTILOS DE FILTRO (STUDENT LIST FILTERS) */
+/* ========================================================== */
 
 .filter-tools {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    gap: 20px; /* Espaçamento entre o dropdown e a busca */
-    flex-wrap: wrap; /* Para responsividade */
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
-/* Estilos para o dropdown de turma */
 .dropdown-container {
     position: relative;
     display: inline-block;
 }
 
-.form-select { /* Estilo do select box */
-    padding: 10px 40px 10px 15px; /* Mais padding à direita para o ícone */
-    border: 1px solid #e0e0e0;
+.form-select {
+    padding: 10px 40px 10px 15px;
+    border: 1px solid var(--border-color); /* USANDO A VARIÁVEL */
     border-radius: 8px;
-    background-color: #fff;
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
     font-size: 1em;
-    color: #34495e;
-    appearance: none; /* Remove o estilo padrão do navegador para o dropdown */
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+    appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    min-width: 180px; /* Largura mínima para o dropdown */
+    box-shadow: 0 2px 10px var(--shadow-color); /* USANDO A VARIÁVEL */
+    min-width: 180px;
 }
 
     .form-select:focus {
         outline: none;
-        border-color: #3498db;
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        border-color: var(--accent-blue); /* USANDO A VARIÁVEL */
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); /* Poderia ser uma nova variável ou fixo */
     }
 
-.dropdown-icon { /* Ícone de seta para o dropdown */
+.dropdown-icon {
     position: absolute;
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
-    color: #7f8c8d;
-    pointer-events: none; /* Garante que o clique passe para o select */
+    color: var(--text-secondary); /* USANDO A VARIÁVEL */
+    pointer-events: none;
 }
 
-/* Estilos para a caixa de pesquisa de aluno (reusando e ajustando) */
-.search-box {
-    display: flex;
-    align-items: center;
-    flex-grow: 1; /* Permite que cresça e ocupe espaço restante */
-    max-width: 350px; /* Largura máxima para a busca */
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 10px 15px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e0e0e0;
-}
+/* Reutilizando search-box, mas garantindo que as variáveis são usadas */
+/* O .search-box já foi refatorado acima, então este bloco não precisa ser repetido */
 
 .search-input {
     border: none;
@@ -530,151 +639,135 @@
     flex-grow: 1;
     padding: 5px 0;
     font-size: 1em;
-    color: #34495e;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+    background-color: transparent; /* Garante que não tenha fundo próprio */
 }
 
     .search-input::placeholder {
-        color: #bdc3c7;
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
     }
 
 .search-icon {
-    color: #7f8c8d;
-    margin-left: 10px; /* Ícone agora à direita do input */
+    color: var(--text-secondary); /* USANDO A VARIÁVEL */
+    margin-left: 10px;
     font-size: 1.1em;
 }
 
-/* Responsividade para filter-tools */
-@media (max-width: 768px) {
-    .filter-tools {
-        flex-direction: column; /* Empilha os elementos */
-        align-items: flex-start; /* Alinha à esquerda */
-        gap: 15px;
-    }
-
-    .dropdown-container,
-    .search-box {
-        width: 100%; /* Ocupa a largura total */
-        max-width: 100%; /* Garante que não exceda */
-    }
-
-    .form-select {
-        width: 100%;
-    }
-}
+/* ========================================================== */
+/* 7. ESTILOS DE LISTA DE ALUNOS (STUDENT LIST) */
+/* ========================================================== */
 
 .student-list-header {
     display: grid;
-    grid-template-columns: 2fr 1.2fr 1.2fr; /* Colunas para Nome, Status, Entregas. Ajuste conforme necessário. */
+    grid-template-columns: 2fr 1.2fr 1.2fr;
     gap: 20px;
-    background-color: #f2f4f6; /* Fundo do cabeçalho */
-    padding: 15px 30px; /* Padding do cabeçalho */
-    border-radius: 10px; /* Bordas arredondadas para o cabeçalho */
-    margin-bottom: 20px; /* Espaço abaixo do cabeçalho */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Sombra suave */
+    background-color: var(--table-header-bg); /* USANDO A VARIÁVEL */
+    padding: 15px 30px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px var(--shadow-color); /* USANDO A VARIÁVEL */
 }
 
     .student-list-header h3 {
-        font-size: 1.1em; /* Tamanho do texto do cabeçalho */
-        color: #555;
+        font-size: 1.1em;
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
         font-weight: 600;
         text-transform: uppercase;
-        margin: 0; /* Remover margens padrão */
+        margin: 0;
     }
 
-/* Container principal para a grade de cards de alunos */
 .student-cards-grid {
     display: grid;
-    grid-template-columns: 1fr; /* Por padrão, uma coluna em telas menores */
-    gap: 15px; /* Espaço entre os cards */
-    padding-bottom: 30px; /* Espaço na parte inferior, se necessário */
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding-bottom: 30px;
 }
 
-/* Estilo para cada card de aluno individual */
 .student-card {
-    background-color: #fff;
-    border-radius: 12px; /* Bordas arredondadas */
-    padding: 20px 30px; /* Padding interno */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Sombra mais destacada */
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
+    border-radius: 12px;
+    padding: 20px 30px;
+    box-shadow: 0 4px 15px var(--shadow-color); /* USANDO A VARIÁVEL */
     display: grid;
-    grid-template-columns: 2fr 1.2fr 1.2fr; /* Colunas para info, status, entrega */
-    align-items: center; /* Alinha verticalmente os itens no centro */
-    gap: 20px; /* Espaço entre as colunas do card */
+    grid-template-columns: 2fr 1.2fr 1.2fr;
+    align-items: center;
+    gap: 20px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    color: var(--text-primary); /* Adicionado para texto padrão do card */
 }
 
     .student-card:hover {
-        transform: translateY(-3px); /* Efeito de levantar no hover */
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px var(--shadow-color); /* USANDO A VARIÁVEL */
     }
 
-/* Seção de informações do aluno (avatar e nome) */
 .student-info {
     display: flex;
     align-items: center;
 }
 
 .student-avatar {
-    width: 45px; /* Tamanho do avatar */
+    width: 45px;
     height: 45px;
-    border-radius: 50%; /* Circular */
+    border-radius: 50%;
     object-fit: cover;
     margin-right: 15px;
-    border: 2px solid #e0e0e0; /* Borda suave */
+    border: 2px solid var(--border-color); /* USANDO A VARIÁVEL */
 }
 
 .student-name {
     font-weight: 600;
-    color: #34495e;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
     font-size: 1.1em;
 }
 
-/* Estilos para a exibição de status do aluno */
 .student-status-display {
     display: flex;
     align-items: center;
     font-size: 1em;
     font-weight: 500;
+    color: var(--text-primary); /* Adicionado, para que o texto também mude */
 }
 
     .student-status-display i {
         margin-right: 8px;
-        font-size: 1.2em; /* Tamanho do ícone */
+        font-size: 1.2em;
+        color: var(--text-secondary); /* Ícone pode ter cor secundária ou uma nova variável */
     }
 
 /* Cores dos textos de status */
 .status-participando {
-    color: #27ae60; /* Verde */
+    color: var(--status-participando);
 }
 
 .status-inativo {
-    color: #e74c3c; /* Vermelho */
+    color: var(--status-inativo);
 }
 
 .status-atrasado {
-    color: #f39c12; /* Laranja */
+    color: var(--status-atrasado);
 }
 
-/* Estilos para a exibição de entregas recentes */
 .student-delivery-display {
     display: flex;
     align-items: center;
     font-size: 1em;
     font-weight: 500;
-    color: #666;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
 }
 
     .student-delivery-display i {
         margin-right: 8px;
-        font-size: 1.2em; /* Tamanho do ícone */
-        color: #7f8c8d; /* Cor do ícone de entrega */
+        font-size: 1.2em;
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
     }
 
 .no-data-message {
     text-align: center;
     padding: 30px;
-    color: #7f8c8d;
+    color: var(--text-secondary); /* USANDO A VARIÁVEL */
     font-style: italic;
-    grid-column: 1 / -1; /* Ocupa todas as colunas na grade */
+    grid-column: 1 / -1;
 }
 
 /*Evasao */
@@ -771,41 +864,368 @@
 
     .legend-color-box.red {
         background-color: #e74c3c; 
+
+/* ========================================================== */
+/* 8. ESTILOS DE TURMAS (CLASSES) */
+/* ========================================================== */
+
+.turmas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.turma-card {
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 25px var(--shadow-color); /* USANDO A VARIÁVEL */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+}
+
+    .turma-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 35px var(--shadow-color); /* USANDO A VARIÁVEL */
     }
 
-/* RESPONSIVIDADE PARA A TELA DE ALUNOS */
-@media (max-width: 992px) { /* Em tablets, os cards podem ter 2 colunas */
+.turma-icon {
+    font-size: 3.5em;
+    color: var(--accent-blue); /* USANDO A VARIÁVEL */
+    margin-bottom: 20px;
+}
+
+.turma-name {
+    font-size: 1.8em;
+    font-weight: 600;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+    margin-bottom: 10px;
+}
+
+.turma-students {
+    font-size: 1.1em;
+    color: var(--text-secondary); /* USANDO A VARIÁVEL */
+    margin: 0;
+}
+
+/* ========================================================== */
+/* 9. ESTILOS DE CONFIGURAÇÕES */
+/* ========================================================== */
+
+.configurations-section {
+    background-color: var(--bg-secondary); /* USANDO A VARIÁVEL */
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 25px var(--shadow-color); /* USANDO A VARIÁVEL */
+    margin-top: 40px;
+    color: var(--text-primary); /* USANDO A VARIÁVEL */
+}
+
+    .configurations-section h2,
+    .configurations-section h3 {
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
+        margin-bottom: 25px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color); /* USANDO A VARIÁVEL */
+    }
+
+    .configurations-section h3 {
+        margin-top: 40px;
+        font-size: 1.5em;
+    }
+
+.config-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px dashed var(--border-color); /* USANDO A VARIÁVEL */
+}
+
+    .config-item:last-of-type {
+        border-bottom: none;
+        margin-bottom: 30px;
+    }
+
+    .config-item label {
+        flex: 0 0 250px;
+        font-weight: 600;
+        margin-right: 20px;
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
+    }
+
+    .config-item input[type="checkbox"] {
+        transform: scale(1.5);
+        margin-right: 15px;
+    }
+
+    .config-item .form-select,
+    .config-item input[type="text"],
+    .config-item button {
+        flex-grow: 1;
+        max-width: 300px;
+        background-color: var(--bg-primary); /* USANDO A VARIÁVEL (para campos de input/select no tema escuro) */
+        color: var(--text-primary); /* USANDO A VARIÁVEL */
+        border: 1px solid var(--border-color); /* USANDO A VARIÁVEL */
+    }
+
+        .config-item .form-select:focus,
+        .config-item input[type="text"]:focus {
+            outline: none; /* Adicionado para consistência */
+            border-color: var(--accent-blue); /* USANDO A VARIÁVEL */
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); /* Mantido fixo, ou pode ser uma nova variável */
+        }
+
+    .config-item .config-description {
+        flex-grow: 2;
+        margin-left: 20px;
+        color: var(--text-secondary); /* USANDO A VARIÁVEL */
+        font-size: 0.95em;
+    }
+
+/* Botões genéricos para configurações (reutilizando estilos .btn) */
+/* .btn já foi definido acima, apenas adicionei os estilos específicos de cada tipo */
+.btn-secondary {
+    background-color: var(--status-default); /* USANDO A VARIÁVEL (cinza) */
+    color: var(--text-light); /* USANDO A VARIÁVEL */
+}
+
+    .btn-secondary:hover {
+        background-color: var(--text-secondary); /* USANDO A VARIÁVEL */
+    }
+
+.btn-success {
+    background-color: var(--accent-green); /* USANDO A VARIÁVEL */
+    color: var(--text-light); /* USANDO A VARIÁVEL */
+}
+
+    .btn-success:hover {
+        background-color: #27ae60; /* Mantido fixo ou nova variável */
+    }
+
+.btn-danger {
+    background-color: var(--accent-red); /* USANDO A VARIÁVEL */
+    color: var(--text-light); /* USANDO A VARIÁVEL */
+    margin-left: 15px;
+}
+
+    .btn-danger:hover {
+        background-color: #c0392b; /* Mantido fixo ou nova variável */
+    }
+
+.config-actions {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color); /* USANDO A VARIÁVEL */
+    text-align: right;
+}
+
+/* ========================================================== */
+/* 10. RESPONSIVIDADE (SEU CÓDIGO ORIGINAL, APENAS ORGANIZADO) */
+/* ========================================================== */
+
+@media (max-width: 992px) {
+    .sidebar {
+        width: 80px;
+        padding: 15px;
+        align-items: center;
+    }
+
+        .sidebar .logo {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .sidebar .nav-link {
+            justify-content: center;
+            padding: 10px;
+        }
+
+            .sidebar .nav-link span {
+                display: none;
+            }
+
+            .sidebar .nav-link i {
+                margin-right: 0;
+            }
+
+        .sidebar .logout-button a {
+            padding: 8px 10px;
+        }
+
+    .main-content {
+        padding: 20px;
+    }
+
+    .top-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px 20px; /* Ajuste o padding para telas menores */
+    }
+
+        .top-header h1 {
+            font-size: 1.6em;
+            margin-bottom: 10px;
+        }
+
+    .user-profile {
+        margin-top: 15px;
+        width: 100%;
+        justify-content: flex-end; /* Mantém o alinhamento à direita para o perfil do usuário */
+    }
+
+    .cards {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+    }
+
+    .card {
+        padding: 25px;
+    }
+
+    .card-icon {
+        font-size: 2.5em;
+    }
+
+    .card-number {
+        font-size: 3em;
+    }
+
+    .card-title {
+        font-size: 1.1em;
+    }
+
+    .recent-activities-table {
+        padding: 20px;
+    }
+
+        .recent-activities-table th,
+        .recent-activities-table td {
+            padding: 12px;
+            font-size: 0.9em;
+        }
+
+    .page-tools {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .filter-tools {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .dropdown-container,
+    .search-box {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .form-select {
+        width: 100%;
+    }
+
     .student-cards-grid {
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
 
     .student-card {
-        grid-template-columns: 1fr; /* Empilha o conteúdo em telas menores */
+        grid-template-columns: 1fr;
         text-align: center;
-        justify-items: center; /* Centraliza itens no grid */
+        justify-items: center;
     }
 
     .student-list-header {
-        display: none; /* Esconde o cabeçalho da lista em telas menores, se os cards já forem auto-explicativos */
+        display: none;
     }
 
     .student-info,
     .student-status-display,
     .student-delivery-display {
-        flex-direction: column; /* Empilha ícone e texto */
-        align-items: center; /* Centraliza verticalmente */
+        flex-direction: column;
+        align-items: center;
         text-align: center;
     }
 
     .student-avatar {
         margin-right: 0;
-        margin-bottom: 10px; /* Espaço abaixo do avatar */
+        margin-bottom: 10px;
     }
 
     .student-status-display i,
     .student-delivery-display i {
         margin-right: 0;
-        margin-bottom: 5px; /* Espaço abaixo do ícone */
+        margin-bottom: 5px;
+    }
+
+    .turmas-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .turma-card {
+        padding: 25px;
+    }
+
+    .turma-icon {
+        font-size: 3em;
+    }
+
+    .turma-name {
+        font-size: 1.6em;
+    }
+
+    .turma-students {
+        font-size: 1em;
+    }
+
+    .config-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+        .config-item label {
+            flex: none;
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 10px;
+        }
+
+        .config-item .form-select,
+        .config-item input[type="text"],
+        .config-item button {
+            max-width: 100%;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .config-item .config-description {
+            margin-left: 0;
+            margin-top: 5px;
+        }
+
+    .config-actions {
+        text-align: center;
+    }
+
+    .btn-danger {
+        margin-left: 0;
+        margin-top: 15px;
     }
 }
 
@@ -813,6 +1233,59 @@
     .evasion-risk-content {
         flex-direction: column; /* Empilha o gráfico e a legenda em telas menores */
         gap: 30px;
+
+@media (max-width: 576px) {
+    .main-content {
+        padding: 15px;
+    }
+
+    .top-header {
+        padding: 10px 15px;
+    }
+
+        .top-header h1 {
+            font-size: 1.4em;
+        }
+
+    .cards {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .card {
+        padding: 15px;
+    }
+
+    .recent-activities-table {
+        padding: 15px;
+    }
+
+        .recent-activities-table th,
+        .recent-activities-table td {
+            padding: 8px 10px;
+            font-size: 0.9em;
+        }
+
+    .turmas-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .turma-card {
+        padding: 15px;
+    }
+
+    .turma-icon {
+        font-size: 2.5em;
+    }
+
+    .turma-name {
+        font-size: 1.4em;
+    }
+
+    .student-cards-grid {
+        grid-template-columns: 1fr;
+
     }
 
     .chart-container {
@@ -847,4 +1320,11 @@
             font-size: 0.95em;
         }
     }
+
+
+    .student-status-display,
+    .student-delivery-display {
+        font-size: 0.95em;
+    }
+}
 

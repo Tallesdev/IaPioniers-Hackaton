@@ -1,0 +1,43 @@
+﻿@model IaPioniers.Models.ViewModels.TurmasIndexViewModel
+
+@{
+    ViewData["Title"] = "Turmas";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="main-content">
+    <header class="top-header">
+        <h1>Turmas</h1>
+        <div class="user-profile">
+            <span class="user-name">Prof. @Model.ProfessorNome</span>  
+        </div>
+    </header>
+
+    <section class="turmas-grid">
+        @if (Model.Turmas != null && Model.Turmas.Any())
+        {
+            @foreach (var turma in Model.Turmas)
+            {
+                <div class="turma-card">
+                    <div class="turma-icon">
+                        <i class="fas fa-graduation-cap"></i> @* Ícone de boné de formatura para turmas *@
+                    </div>
+                    <h3 class="turma-name">@turma.TurmaNome</h3>
+                    <p class="turma-students">@turma.QuantidadeAlunos alunos</p>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="no-data-message">Nenhuma turma encontrada.</p>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    @* Scripts específicos para esta página, se houver necessidade no futuro *@
+}

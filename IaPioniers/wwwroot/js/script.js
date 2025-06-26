@@ -26,8 +26,8 @@
 });
 
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.getElementById('sidebar');
+document.addEventListener('DOMContentLoaded', function () {
+    const sidebar = document.getElementById('sidebar');
     const sidebarToggleBtn = document.getElementById('sidebarToggle');
 
     if (sidebar && sidebarToggleBtn) { // Verifica se os elementos existem
@@ -46,5 +46,5 @@
                 }
             }
         });
-        }
-    });
+    }
+});
