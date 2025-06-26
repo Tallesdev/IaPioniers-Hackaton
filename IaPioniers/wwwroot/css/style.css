@@ -5,6 +5,11 @@ body {
     background-color: #f4f7fa; /* Cor de fundo da página */
 }
 
+canvas {
+    max-width: 100%;
+    height: auto; /* Permite que o canvas ajuste a altura automaticamente */
+}
+
 .app-container {
     display: flex; /* Usa Flexbox para o layout principal (sidebar + main-content) */
     min-height: 100vh; /* Garante que o container ocupe a altura total da tela */
@@ -124,6 +129,7 @@ body {
         .sidebar-footer a i {
             margin-right: 10px;
             font-size: 1.2em;
+          
         }
 
 /* Esconde o texto "Sair" quando o sidebar está fechado */

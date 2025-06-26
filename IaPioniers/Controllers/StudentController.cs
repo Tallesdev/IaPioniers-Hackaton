@@ -82,11 +82,13 @@ namespace IaPioniers.Controllers
             // Define a turma padrão selecionada (se houver uma)
             viewModel.SelectedClass = "Turma A"; // Por exemplo, "Turma A" será a padrão
 
-
             ViewData["Title"] = "Alunos";
             return View(viewModel); // Passa o ViewModel para a View
         }
     }
 }
 
-
+    // Ações para Editar, Detalhes, Excluir viriam aqui...
+    // public IActionResult Edit(int id) { ... }
+    // public IActionResult Details(int id) { ... }
+    // public IActionResult Delete(int id) { ... }
