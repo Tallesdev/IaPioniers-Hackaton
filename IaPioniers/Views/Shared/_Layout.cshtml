@@ -190,12 +190,6 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Atividades" ? "active" : "")" asp-area="" asp-controller="Activities" asp-action="Index">
-                    <i class="fas fa-tasks"></i>
-                    <span>Atividades</span>
-                </a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Configurations" ? "active" : "")" asp-area="" asp-controller="Configurations" asp-action="Index">
                     <i class="fas fa-cog"></i>
                     <span>Configurações</span>

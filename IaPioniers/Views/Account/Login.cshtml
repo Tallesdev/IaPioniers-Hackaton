@@ -241,7 +241,7 @@
 
                 $.post('/Account/Login', loginData)
                     .done(function () {
-                        window.location.href = '/Home/Index';
+                        window.location.href = '/Dashboard/Index';
                     })
                     .fail(function () {
                         alert('Erro ao fazer login. Verifique seus dados.');
@@ -261,7 +261,7 @@
                 $.post('/Account/Register', data)
                     .done(function () {
                         alert('Cadastro realizado com sucesso!');
-                        window.location.href = '/Home/Index';
+                        window.location.href = '/Dashboard/Index';
                     })
                     .fail(function () {
                         alert('Erro ao cadastrar. Verifique os dados.');

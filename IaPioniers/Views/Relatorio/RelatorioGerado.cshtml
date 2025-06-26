@@ -3,167 +3,198 @@
 @{
     ViewData["Title"] = "Relatório da Turma";
     Layout = "_Layout";
+    // Calcula a média de risco da turma. Multiplica por 100 para obter porcentagem.
+    // Usa InvariantCulture para garantir que o separador decimal seja um ponto no JS.
     var media = Model.AlunosEmRisco.Any() ? Model.AlunosEmRisco.Average(a => a.RiskScore) * 100 : 0;
 }
 
-<div class="relatorio-container">
-    <h2>Relatório da Turma: @Model.Turma.Codigo</h2>
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/relatorio.css" asp-append-version="true" /> @* Importa o novo CSS para o relatório *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> @* Para o ícone de estudante no card da turma *@
+}
 
-    <div class="turma-card">
-        <i class="fas fa-user-graduate icon"></i>
-        <h3>@Model.Turma.Codigo</h3>
-        <p><strong>Curso:</strong> @Model.Turma.Curso?.Nome</p>
-        <p><strong>Ano Letivo:</strong> @Model.Turma.AnoLetivo</p>
-        <p><strong>Professores:</strong> @Model.Turma.Professores?.Count</p>
-    </div>
+<div class="main-content"> @* Usa a classe main-content para consistência com o layout geral do dashboard *@
+    <header class="top-header">
+        <h1>Relatório de Evasão por Turma</h1>
+        <div class="user-profile">
+            @* Assume que ViewBag.ProfessorNome está sendo passado pelo controller para exibir o nome do professor logado *@
+            <span class="user-name">Prof. @(ViewBag.ProfessorNome ?? "Usuário")</span>
+            <img src="https://placehold.co/40x40/7B3E90/FFFFFF?text=P" alt="Foto do Professor" class="user-avatar" onerror="this.onerror=null;this.src='https://placehold.co/40x40/7B3E90/FFFFFF?text=P';">
+        </div>
+    </header>
 
-    <h3 style="margin-top:40px;">Média de Risco de Evasão da Turma: @media.ToString("F2")%</h3>
-    <div class="grafico-container">
-        <canvas id="graficoEvasaoTurma"></canvas>
-    </div>
+    <div class="relatorio-container">
+       
+        <h2>Relatório da Turma: @(Model.Turma?.Codigo ?? "N/A")</h2> @* Exibe o código da turma/curso *@
 
-    <h3 style="margin-top:40px;">Alunos em Risco de Evasão</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Aluno</th>
-                <th>Risco (%)</th>
-                <th>Motivos</th>
-                <th>Gráfico</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (int i = 0; i < Model.AlunosEmRisco.Count; i++)
-            {
-                var aluno = Model.AlunosEmRisco[i];
-                <tr>
-                    <td>@aluno.StudentName</td>
-                    <td>@(aluno.RiskScore * 100).ToString("F1")%</td>
-                    <td>@string.Join(", ", aluno.EvasionReasons)</td>
-                    <td>
-                        <canvas id="graficoAluno_@i" width="150" height="150"></canvas>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        <div class="turma-card">
+            <i class="fas fa-chalkboard-teacher icon"></i> @* Ícone representativo para a turma/curso *@
+            <h3>@(Model.Turma?.Codigo ?? "Turma Desconhecida")</h3>
+            <p><strong>Curso:</strong> @(Model.Turma?.Curso?.Nome ?? "N/A")</p> @* Exibe o nome do curso associado à turma *@
+            <p><strong>Ano Letivo:</strong> @(Model.Turma?.AnoLetivo.ToString() ?? "N/A")</p>
+            <p><strong>Professores:</strong> @(Model.Turma?.Professores?.Count.ToString() ?? "N/A")</p> @* Exibe a contagem de professores *@
+        </div>
 
-    <div style="text-align:center; margin-top:30px;">
-        <a asp-action="Index" class="btn-voltar">← Voltar</a>
+        <h3 style="margin-top:40px;">Média de Risco de Evasão da Turma: @media.ToString("F2")%</h3>
+        <div class="grafico-container">
+            <canvas id="graficoEvasaoTurma"></canvas> @* Canvas para o gráfico de média da turma *@
+        </div>
+
+        <h3 style="margin-top:40px;">Alunos em Risco de Evasão</h3>
+        @if (Model.AlunosEmRisco != null && Model.AlunosEmRisco.Any())
+        {
+            <div class="table-responsive"> @* Adiciona uma div para tornar a tabela responsiva em telas menores *@
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Aluno</th>
+                            <th>Risco (%)</th>
+                            <th>Motivos</th>
+                            <th>Gráfico</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.AlunosEmRisco.Count; i++)
+                        {
+                            var aluno = Model.AlunosEmRisco[i];
+                            <tr>
+                                <td>@aluno.StudentName</td>
+                                <td>@(aluno.RiskScore * 100).ToString("F1")%</td> @* Exibe o score de risco formatado como porcentagem *@
+                                <td>
+                                    @if (aluno.EvasionReasons != null && aluno.EvasionReasons.Any())
+                                    {
+                                        <ul>
+                                            @foreach (var reason in aluno.EvasionReasons)
+                                            {
+                                                <li>@reason</li> @* Lista os motivos de evasão *@
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span>Nenhuma razão detectada.</span> @* Mensagem se não houver motivos *@
+                                    }
+                                </td>
+                                <td>
+                                    <canvas id="graficoAluno_@i"></canvas> @* Canvas para o gráfico individual de cada aluno *@
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="no-data">Nenhum aluno em risco de evasão encontrado para esta turma.</p> @* Mensagem se não houver alunos em risco *@
+        }
+
+        <div style="text-align:center; margin-top:30px;">
+            <a asp-action="Index" class="btn-voltar">← Voltar para Seleção de Relatórios</a> @* Botão para voltar *@
+        </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> @* Inclui a biblioteca Chart.js *@
     <script>
-        // Gráfico da média da turma
-        const media = @media.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-        const restante = (100 - media).toFixed(2);
+        // Gráfico da média de risco da turma (Doughnut Chart)
+        const media = @media.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); // Obtém a média de risco do modelo
+        const restante = (100 - media).toFixed(2); // Calcula o restante para o gráfico
 
         new Chart(document.getElementById('graficoEvasaoTurma'), {
-            type: 'doughnut',
+            type: 'doughnut', // Tipo de gráfico: Rosca
             data: {
-                labels: ['Risco Médio', 'Restante'],
+                labels: ['Risco Médio', 'Restante'], // Rótulos das seções do gráfico
                 datasets: [{
-                    data: [media, restante],
-                    backgroundColor: ['#e74c3c', '#2ecc71']
+                    data: [media, restante], // Dados para o gráfico
+                    backgroundColor: ['#e74c3c', '#2ecc71'], // Cores: Vermelho para risco, Verde para o restante
+                    hoverOffset: 4 // Deslocamento ao passar o mouse
                 }]
             },
             options: {
+                responsive: true, // Torna o gráfico responsivo
+                maintainAspectRatio: false, // Permite que o gráfico se ajuste ao tamanho do container
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Risco Médio de Evasão da Turma'
+                        text: 'Risco Médio de Evasão da Turma', // Título do gráfico
+                        color: '#34495e', // Cor do título
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
                     },
                     legend: {
-                        position: 'bottom'
+                        position: 'bottom', // Posição da legenda
+                        labels: {
+                            color: '#34495e', // Cor dos rótulos da legenda
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed + '%'; // Adiciona '%' ao valor no tooltip
+                                }
+                                return label;
+                            }
+                        }
                     }
                 }
             }
         });
 
-        // Gráficos individuais por aluno
+        // Gráficos individuais por aluno (Doughnut Charts)
+        // Serializa a lista de scores de risco dos alunos para JavaScript
         const alunos = @Html.Raw(Json.Serialize(Model.AlunosEmRisco.Select(a => a.RiskScore * 100)));
         alunos.forEach((risco, index) => {
-            const restante = 100 - risco;
+            const restante = (100 - risco).toFixed(2); // Calcula o restante para cada gráfico individual
             new Chart(document.getElementById(`graficoAluno_${index}`), {
-                type: 'doughnut',
+                type: 'doughnut', // Tipo de gráfico: Rosca
                 data: {
-                    labels: ['Risco', 'Seguro'],
+                    labels: ['Risco', 'Seguro'], // Rótulos para o gráfico individual
                     datasets: [{
-                        data: [risco, restante],
-                        backgroundColor: ['#f39c12', '#3498db']
+                        data: [risco, restante], // Dados para o gráfico individual
+                        backgroundColor: ['#f39c12', '#3498db'], // Cores: Laranja para risco, Azul para seguro
+                        hoverOffset: 4
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         title: {
-                            display: false
+                            display: false // Não exibe título para gráficos pequenos na tabela
                         },
                         legend: {
-                            display: false
+                            display: false // Não exibe legenda para gráficos pequenos na tabela
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%'; // Adiciona '%' ao valor no tooltip
+                                    }
+                                    return label;
+                                }
+                            }
                         }
                     }
                 }
             });
         });
     </script>
-}
-
-@section Styles {
-    <style>
-        .main-content-area{
-            background-color: #34495e;
-        }
-        .relatorio-container {
-            max-width: 1000px;
-            margin: 50px auto;
-            padding: 40px;
-            background-color: #34495e;
-        }
-
-        .grafico-container {
-            max-width: 400px;
-            margin: 0 auto 50px auto;
-            padding: 30px;
-            color: white;
-        }
-
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-            background-color: #34495e;
-            color:black;
-            text-emphasis-color:black;
-        }
-
-        th, td {
-            padding: 12px;
-            border: 1px solid #ccc;
-            vertical-align: middle;
-            text-align: center;
-            color:white;
-        }
-
-        th {
-            background-color: #f0f2f5;
-        }
-
-        .btn-voltar {
-            display: inline-block;
-            margin-top: 20px;
-            background-color: #95a5a6;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: background-color 0.3s ease;
-        }
-
-            .btn-voltar:hover {
-                background-color: #7f8c8d;
-            }
-    </style>
 }

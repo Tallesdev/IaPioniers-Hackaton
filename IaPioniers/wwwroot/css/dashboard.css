@@ -247,7 +247,8 @@ body {
 .card.card-activities {
     background-image: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-dark-blue) 100%); /* USANDO VARIÁVEIS */
     color: white; /* Texto branco para contraste (não precisa de variável para branco puro) */
-    align-items: flex-start;
+    align-items: center;
+    justify-content:center;
 }
 
     .card.card-activities .card-icon {
@@ -333,7 +334,8 @@ body.dark-theme .card.card-class .card-button.secondary:hover {
 .card.card-summary {
     background-image: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-dark-blue) 100%); /* USANDO VARIÁVEIS */
     color: white;
-    align-items: flex-start;
+    align-items: center;
+    justify-content:center;
 }
 
     .card.card-summary .card-icon {
@@ -344,12 +346,14 @@ body.dark-theme .card.card-class .card-button.secondary:hover {
     .card.card-summary .card-number {
         color: white;
         font-size: 3.5em;
+        padding:48px;
     }
 
     .card.card-summary .card-title {
         color: rgba(255, 255, 255, 0.8);
         font-size: 1.3em;
         margin-bottom: 25px;
+        
     }
 
     .card.card-summary .card-button.primary {

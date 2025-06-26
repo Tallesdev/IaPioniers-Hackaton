@@ -1,0 +1,258 @@
+﻿/* wwwroot/css/relatorio.css */
+
+/* Importa variáveis globais se existirem no dashboard.css ou _Layout.cshtml.css */
+/* :root { /* suas variáveis CSS aqui, se aplicável */ /* } */
+
+/* Estilos para o container principal do relatório */
+.relatorio-container {
+    max-width: 1200px; /* Aumenta a largura máxima para acomodar mais conteúdo */
+    margin: 40px auto; /* Margem superior/inferior e centralizado */
+    padding: 30px;
+    background-color: var(--bg-secondary, #ffffff); /* Fundo branco ou da variável */
+    border-radius: 15px; /* Cantos arredondados */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* Sombra mais suave e pronunciada */
+    color: var(--text-primary, #34495e); /* Cor do texto principal */
+}
+
+    .relatorio-container h2,
+    .relatorio-container h3 {
+        color: var(--text-primary, #34495e); /* Cor do texto principal */
+        font-weight: 700;
+        margin-bottom: 25px;
+        text-align: center;
+    }
+
+    .relatorio-container h2 {
+        font-size: 2.5em; /* Título principal maior */
+        border-bottom: 2px solid var(--border-color, #eee); /* Linha de separação */
+        padding-bottom: 15px;
+        margin-bottom: 35px;
+    }
+
+    .relatorio-container h3 {
+        font-size: 1.8em; /* Subtítulos */
+        margin-top: 40px; /* Espaço acima dos subtítulos */
+        border-bottom: 1px solid var(--border-color, #eee);
+        padding-bottom: 10px;
+    }
+
+/* Estilo do card de turma */
+.turma-card {
+    background: linear-gradient(135deg, var(--accent-blue, #3498db), var(--accent-dark-blue, #2980b9)); /* Gradiente azul */
+    color: var(--text-light, #ecf0f1); /* Texto claro */
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 40px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+    .turma-card .icon {
+        font-size: 3.5em; /* Ícone maior */
+        margin-bottom: 15px;
+        color: rgba(255, 255, 255, 0.8); /* Ícone ligeiramente transparente */
+    }
+
+    .turma-card h3 {
+        color: var(--text-light, #ecf0f1);
+        font-size: 2.2em;
+        margin-bottom: 10px;
+        border-bottom: none; /* Remove a borda inferior para este h3 */
+        padding-bottom: 0;
+    }
+
+    .turma-card p {
+        font-size: 1.1em;
+        margin: 5px 0;
+    }
+
+/* Estilo do gráfico da turma */
+.grafico-container {
+    max-width: 500px; /* Tamanho maior para o gráfico principal */
+    height: 400px; /* Altura para o gráfico */
+    margin: 30px auto 50px auto;
+    padding: 20px;
+    background-color: var(--bg-secondary, #ffffff);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Estilo da tabela de alunos em risco */
+.table {
+    width: 100%;
+    margin-top: 30px;
+    border-collapse: collapse;
+    background-color: var(--bg-secondary, #ffffff);
+    border-radius: 15px; /* Cantos arredondados para a tabela */
+    overflow: hidden; /* Garante que os cantos arredondados funcionem */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+    .table thead th {
+        background-color: var(--accent-blue, #3498db); /* Fundo azul para o cabeçalho da tabela */
+        color: var(--text-light, #ecf0f1);
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.9em;
+        letter-spacing: 0.5px;
+    }
+
+    .table tbody td {
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border-color, #eee);
+        color: var(--text-primary, #34495e);
+        vertical-align: middle;
+    }
+
+    .table tbody tr:nth-child(even) {
+        background-color: var(--bg-primary, #f4f7f6); /* Fundo mais claro para linhas pares */
+    }
+
+    .table tbody tr:hover {
+        background-color: var(--accent-blue, #3498db); /* Fundo azul no hover */
+        color: var(--text-light, #ecf0f1); /* Texto claro no hover */
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        .table tbody tr:hover td {
+            color: var(--text-light, #ecf0f1); /* Garante que o texto dentro do td também mude no hover */
+        }
+
+
+    /* Estilo para a lista de motivos de evasão */
+    .table tbody td ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
+
+        .table tbody td ul li {
+            margin-bottom: 5px;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+            .table tbody td ul li:last-child {
+                margin-bottom: 0;
+            }
+
+/* Estilo do botão "Voltar" */
+.btn-voltar {
+    display: inline-block;
+    background-color: var(--accent-dark-blue, #2980b9); /* Azul escuro */
+    color: var(--text-light, #ecf0f1);
+    padding: 12px 25px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+    .btn-voltar:hover {
+        background-color: var(--accent-blue, #3498db);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+
+/* Gráficos de barra individuais para alunos */
+.table tbody td canvas {
+    max-width: 100px; /* Tamanho menor para os gráficos na tabela */
+    max-height: 100px;
+    display: block; /* Remove espaço extra abaixo do canvas */
+    margin: 0 auto; /* Centraliza o gráfico na célula */
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .relatorio-container {
+        padding: 20px;
+        margin: 20px auto;
+    }
+
+        .relatorio-container h2 {
+            font-size: 2em;
+            margin-bottom: 25px;
+        }
+
+        .relatorio-container h3 {
+            font-size: 1.5em;
+            margin-top: 30px;
+        }
+
+    .turma-card {
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+
+        .turma-card .icon {
+            font-size: 2.8em;
+        }
+
+        .turma-card h3 {
+            font-size: 1.8em;
+        }
+
+        .turma-card p {
+            font-size: 1em;
+        }
+
+    .grafico-container {
+        max-width: 100%;
+        height: 300px;
+        margin-bottom: 30px;
+    }
+
+    .table thead th,
+    .table tbody td {
+        padding: 10px 15px;
+        font-size: 0.85em;
+    }
+
+        /* Ocultar colunas menos importantes em telas pequenas */
+        .table thead th:nth-child(4), /* Motivos */
+        .table tbody td:nth-child(4) {
+            display: none;
+        }
+}
+
+@media (max-width: 576px) {
+    .relatorio-container {
+        padding: 15px;
+        margin: 15px auto;
+    }
+
+        .relatorio-container h2 {
+            font-size: 1.8em;
+        }
+
+        .relatorio-container h3 {
+            font-size: 1.3em;
+        }
+
+    .table thead th,
+    .table tbody td {
+        padding: 8px 10px;
+        font-size: 0.75em;
+    }
+
+        /* Forçar quebra de linha para motivos se necessário */
+        .table tbody td ul li {
+            font-size: 0.8em;
+        }
+
+        /* Ocultar mais colunas se necessário */
+        .table thead th:nth-child(5), /* Gráfico */
+        .table tbody td:nth-child(5) {
+            display: none;
+        }
+}
