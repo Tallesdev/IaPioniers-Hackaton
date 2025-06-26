@@ -1,3 +1,4 @@
+
 ﻿ /* wwwroot/css/dashboard.css */
 /* ========================================================== */
 /* 1. VARIÁVEIS CSS (CUSTOM PROPERTIES) PARA TEMAS CLARO E ESCURO */
@@ -159,6 +160,7 @@ body {
     min-height: 100vh;
     color: var(--text-primary); /* USANDO A VARIÁVEL */
     transition: background-color 0.3s ease, color 0.3s ease;
+
 }
 
 .top-header {
@@ -245,10 +247,15 @@ body {
 
 /* Card de Atividades (primeiro card azul) */
 .card.card-activities {
-    background-image: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-dark-blue) 100%); /* USANDO VARIÁVEIS */
-    color: white; /* Texto branco para contraste (não precisa de variável para branco puro) */
+
+    background-image: linear-gradient(135deg, #3498db 0%, #2980b9 100%); /* Gradiente azul do protótipo */
+    color: white; /* Texto branco para contraste */
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    justify-content:center;
+    color: white; 
 }
 
     .card.card-activities .card-icon {
@@ -269,9 +276,21 @@ body {
     }
 
     .card.card-activities .card-button.primary {
+
+        /* ESTILO DO BOTÃO "VER ATIVIDADES" - FANTASMA BRANCO */
         background-color: transparent;
         border: 2px solid white;
         color: white;
+        padding: 12px 25px;
+        border-radius: 50px;
+        white-space: nowrap;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+
     }
 
         .card.card-activities .card-button.primary:hover {
@@ -751,6 +770,101 @@ body.dark-theme .action-btn.delete-btn:hover {
     grid-column: 1 / -1;
 }
 
+/*Evasao */
+/* Estilos para a seção de Risco de Evasão Geral */
+.section-evasion-risk {
+    background-color: white; 
+    border-radius: 15px; 
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    padding: 30px; 
+    margin-top: 40px; 
+}
+
+    .section-evasion-risk h3 {
+        margin-top: 0;
+        margin-bottom: 25px;
+        color: #34495e; 
+        font-size: 1.8em; 
+        font-weight: 600;
+    }
+
+.evasion-risk-content {
+    display: flex; 
+    align-items: center;
+    gap: 40px; 
+}
+
+.chart-container {
+    width: 200px; 
+    height: 200px; 
+    position: relative;
+    border-radius: 50%; 
+    overflow: hidden; 
+   
+}
+
+.pie-chart {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 50%;
+    /* O conic-gradient cria o gráfico de pizza. Ajuste as porcentagens para bater com o protótipo.
+       No protótipo (image_8f4b96.png), o verde parece ser o maior, seguido pelo amarelo e vermelho.
+       Vamos estimar as porcentagens com base no visual. Por exemplo:
+       Verde (Sem Risco): ~50%
+       Laranja (Risco Médio): ~25%
+       Vermelho (Risco Alto): ~25%
+    */
+    background: conic-gradient( #27ae60 0% 50%,
+    #f39c12 50% 75%,
+    #e74c3c 75% 100%
+    );
+   
+}
+
+    .pie-chart::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px; 
+        height: 100px;
+        border-radius: 50%;
+        background-color: white;
+    }
+
+.legend {
+    display: flex;
+    flex-direction: column; 
+    gap: 12px; 
+    font-size: 1.1em; 
+    color: #555;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center; 
+}
+
+.legend-color-box {
+    width: 18px; 
+    height: 18px; 
+    margin-right: 12px; 
+    border-radius: 4px; 
+}
+
+    .legend-color-box.green {
+        background-color: #27ae60; 
+    }
+
+    .legend-color-box.orange {
+        background-color: #f39c12; 
+    }
+
+    .legend-color-box.red {
+        background-color: #e74c3c; 
+
 /* ========================================================== */
 /* 8. ESTILOS DE TURMAS (CLASSES) */
 /* ========================================================== */
@@ -1115,6 +1229,11 @@ body.dark-theme .action-btn.delete-btn:hover {
     }
 }
 
+@media (max-width: 768px) {
+    .evasion-risk-content {
+        flex-direction: column; /* Empilha o gráfico e a legenda em telas menores */
+        gap: 30px;
+
 @media (max-width: 576px) {
     .main-content {
         padding: 15px;
@@ -1166,23 +1285,46 @@ body.dark-theme .action-btn.delete-btn:hover {
 
     .student-cards-grid {
         grid-template-columns: 1fr;
+
     }
 
-    .student-card {
-        padding: 15px 20px;
+    .chart-container {
+        width: 160px; /* Reduz o tamanho do gráfico em telas menores*/
+        height: 160px;
     }
 
-    .student-avatar {
-        width: 40px;
-        height: 40px;
+    .legend {
+        align-items: flex-start; /* Alinha a legenda à esquerda quando empilhada*/
     }
 
-    .student-name {
-        font-size: 1em;
+    @media (max-width: 576px) { /* Em celulares, os cards voltam a uma coluna */
+        .student-cards-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .student-card {
+            padding: 15px 20px;
+        }
+
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+        }
+
+        .student-name {
+            font-size: 1em;
+        }
+
+        .student-status-display,
+        .student-delivery-display {
+            font-size: 0.95em;
+        }
     }
+
 
     .student-status-display,
     .student-delivery-display {
         font-size: 0.95em;
     }
 }
+

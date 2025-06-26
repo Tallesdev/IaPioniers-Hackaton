@@ -21,7 +21,8 @@
             height: 100%; /* Garante que body e html ocupem a altura total */
             overflow-x: hidden; /* Evita scroll horizontal indesejado */
             font-family: 'Roboto', Arial, sans-serif;
-            background-color: #f8f9fa; /* Cor de fundo padrão para o restante da página */
+            background-color: #f8f9fa; 
+            
         }
 
         body {
@@ -89,9 +90,10 @@
                 }
 
         .sidebar-footer {
-            padding: 20px;
+            padding: 20px 20px 0px;
             text-align: center;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
+            
         }
 
         .logout-btn {
@@ -105,7 +107,9 @@
             border-radius: 8px;
             transition: background-color 0.3s ease;
             font-size: 1.1em;
-        }
+            margin-top: -80px;
+			
+		}
 
             .logout-btn i {
                 margin-right: 10px;
@@ -122,13 +126,16 @@
             flex: 1; /* Ocupa todo o espaço restante horizontalmente */
             display: flex;
             flex-direction: column;
-            min-height: 100vh; /* Garante que este wrapper também ocupe a altura total */
+            overflow-y: auto; 
+            height: 100vh; 
+            box-sizing: border-box;
         }
 
         /* Estilo para o conteúdo que será renderizado pela View (Dashboard/Index, etc.) */
         .main-content-area {
             flex: 1; /* Ocupa todo o espaço vertical disponível */
-            padding: 0; /* Removido padding para que o main-content defina */
+            padding: 80px;
+           
         }
 
         /* Estilos para o Footer */
@@ -139,7 +146,11 @@
             background-color: #e9ecef;
             color: #6c757d;
             border-top: 1px solid #dee2e6;
-            box-sizing: border-box; /* Garante que padding não afete a largura total */
+            box-sizing: border-box;
+            bottom: auto;
+            position: static
+        
+ 
         }
     </style>
 

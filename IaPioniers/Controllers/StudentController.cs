@@ -3,7 +3,6 @@
 // Localização: IaPioniers/Controllers/StudentController.cs
 using IaPioniers.Models; // Importa o namespace onde seu StudentSummary está
 using IaPioniers.Models.ViewModels; // Garanta que este namespace está correto
-
 ﻿// Controllers/StudentController.cs (ou AlunoController.cs)
 
 
@@ -90,3 +89,7 @@ namespace IaPioniers.Controllers
 }
 
 
+    // Ações para Editar, Detalhes, Excluir viriam aqui...
+    // public IActionResult Edit(int id) { ... }
+    // public IActionResult Details(int id) { ... }
+    // public IActionResult Delete(int id) { ... }

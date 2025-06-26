@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using IaPioniers.Data;
 using IaPioniers.Models;
+
 using IaPioniers.Models.Models_DB;
 using System.Net.Http;
 using Microsoft.Extensions.Logging;
@@ -10,13 +11,14 @@ using Microsoft.Extensions.Logging;
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Configuração da Conexão com o Banco de Dados ---
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// --- Configuração do Identity ---
+
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -34,7 +36,8 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
-builder.Logging.SetMinimumLevel(LogLevel.Debug); // Define o nível mínimo para DEBUG para depuração
+builder.Logging.SetMinimumLevel(LogLevel.Debug); 
+
 
 
 // --- Injeção de Dependência de Serviços ---
@@ -85,14 +88,14 @@ else
     app.UseHsts();
 }
 
+app.UseHttpsRedirection(); 
+app.UseStaticFiles();     
 
-app.UseHttpsRedirection(); // Redireciona HTTP para HTTPS
-app.UseStaticFiles();      // Permite servir arquivos estáticos (CSS, JS, imagens)
+app.UseRouting();        
 
-app.UseRouting();          // Habilita o roteamento
+app.UseAuthentication();  
+app.UseAuthorization();   
 
-app.UseAuthentication();   // Habilita autenticação (Identity)
-app.UseAuthorization();    // Habilita autorização
 
 // --- Mapeamento de Rotas ---
 
