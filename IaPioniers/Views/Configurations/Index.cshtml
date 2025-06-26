@@ -1,0 +1,100 @@
+﻿@model IaPioniers.Models.ViewModels.ConfigurationViewModel
+
+@{
+    ViewData["Title"] = "Configurações";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="main-content">
+    <header class="top-header">
+        <h1>Configurações</h1>
+        <div class="user-profile">
+            <span class="user-name">Prof. @Model.ProfessorNome</span>
+        </div>
+    </header>
+
+    <section class="configurations-section">
+        <h2>Configurações Gerais</h2>
+
+        <div class="config-item">
+            <label for="notificacoes">Notificações por E-mail:</label>
+            <input type="checkbox" id="notificacoes" checked> @* Exemplo de checkbox *@
+            <p class="config-description">Receber avisos e atualizações por e-mail.</p>
+        </div>
+
+        <div class="config-item">
+            <label for="tema">Tema do Painel:</label>
+            <select id="themeSelector" class="form-select">
+                <option value="light">Claro</option>
+                <option value="dark">Escuro</option>
+            </select>
+            <p class="config-description">Escolha o tema visual do seu painel de controle.</p>
+        </div>
+
+        <h3>Acesso e Segurança</h3>
+        <div class="config-item">
+            <label for="senha">Alterar Senha:</label>
+            <button class="btn btn-secondary">Alterar Senha</button> @* Exemplo de botão *@
+            <p class="config-description">Redefina sua senha de acesso.</p>
+        </div>
+
+        <div class="config-item">
+            <label for="autenticacao2fa">Autenticação de Dois Fatores (2FA):</label>
+            <input type="checkbox" id="autenticacao2fa">
+            <p class="config-description">Adicione uma camada extra de segurança à sua conta.</p>
+        </div>
+
+        <h3>Gestão de Dados</h3>
+        <div class="config-item">
+            <label for="exportarDados">Exportar Dados:</label>
+            <button class="btn btn-primary">Exportar Dados de Alunos</button>
+            <p class="config-description">Baixe um relatório completo dos dados dos seus alunos.</p>
+        </div>
+
+        @* Adicione mais opções de configuração conforme a necessidade *@
+
+        <div class="config-actions">
+            <button class="btn btn-success">Salvar Configurações</button>
+            <button class="btn btn-danger">Cancelar</button>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const themeSelector = document.getElementById('themeSelector');
+            const themeKey = 'user-theme';
+
+            // Garante que o dropdown reflete o tema atualmente aplicado (do localStorage ou sistema)
+            const currentTheme = localStorage.getItem(themeKey) || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (themeSelector) {
+                themeSelector.value = currentTheme;
+            }
+
+            // Listener para mudar o tema ao selecionar no dropdown
+            if (themeSelector) {
+                themeSelector.addEventListener('change', function () {
+                    const selectedTheme = this.value;
+                    // Chamar a função global applyTheme definida no _Layout.cshtml
+                    if (typeof applyTheme === 'function') {
+                        applyTheme(selectedTheme);
+                        localStorage.setItem(themeKey, selectedTheme); // Salva a preferência
+                    }
+                });
+            }
+
+            const saveButton = document.querySelector('.btn-success');
+            if (saveButton) {
+                saveButton.addEventListener('click', function() {
+                    alert('Configurações salvas!');
+                    // Você pode adicionar aqui a lógica para salvar outras configurações do formulário
+                });
+            }
+        });
+    </script>
+}
