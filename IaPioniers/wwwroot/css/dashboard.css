@@ -265,6 +265,7 @@ body {
         color: rgba(255, 255, 255, 0.8);
         font-size: 1.3em;
         margin-bottom: 25px;
+        text-align:center;
     }
 
     .card.card-activities .card-button.primary {
@@ -360,6 +361,7 @@ body.dark-theme .card.card-class .card-button.secondary:hover {
         background-color: transparent;
         border: 2px solid white;
         color: white;
+        text-decoration:none;
     }
 
         .card.card-summary .card-button.primary:hover {

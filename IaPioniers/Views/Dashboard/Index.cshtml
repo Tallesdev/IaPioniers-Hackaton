@@ -30,9 +30,8 @@
             <div class="card-icon"><i class="fas fa-tasks"></i></div>
             <div class="card-content">
                 <span class="card-number">@Model.TotalActivities</span>
-                <p class="card-title">Atividades</p>
+                <p class="card-title">Ações</p>
             </div>
-            <button class="card-button primary">Ver Atividades</button>
         </div>
 
         @* CARD 2: Turma A - Dinâmico com o primeiro curso (se houver) *@
@@ -74,13 +73,13 @@
     </section>
 
     <section class="recent-activities-table">
-        <h3>Atividades Recentes</h3>
+        <h3>Ações Recentes</h3>
         @if (Model.RecentActivities != null && Model.RecentActivities.Any())
         {
             <table>
                 <thead>
                     <tr>
-                        <th>Atividade</th>
+                        <th>Ações</th>
                         <th>Aluno</th>
                         <th>Status</th>
                         <th>Data</th>
