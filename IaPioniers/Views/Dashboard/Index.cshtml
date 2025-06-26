@@ -67,7 +67,9 @@
                 <span class="card-number">@Model.TotalStudents</span>
                 <p class="card-title">Resumo das Turmas</p>
             </div>
+
             <a asp-controller="ProfessorDashboard" class="card-button primary" asp-action="ResumoDeDados" asp-route-professorId="@Model.ProfessorNome" class="button-link">Gerar Relatório</a>
+
         </div>
     </section>
 

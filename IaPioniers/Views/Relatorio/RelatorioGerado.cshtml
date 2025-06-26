@@ -1,0 +1,160 @@
+﻿@model IaPioniers.Models.ViewModels.RelatorioTurmaCompletoViewModel
+
+@{
+    ViewData["Title"] = "Relatório da Turma";
+    Layout = "_Layout";
+    var media = Model.AlunosEmRisco.Any() ? Model.AlunosEmRisco.Average(a => a.RiskScore) * 100 : 0;
+}
+
+<div class="relatorio-container">
+    <h2>Relatório da Turma: @Model.Turma.Codigo</h2>
+
+    <div class="turma-card">
+        <i class="fas fa-user-graduate icon"></i>
+        <h3>@Model.Turma.Codigo</h3>
+        <p><strong>Curso:</strong> @Model.Turma.Curso?.Nome</p>
+        <p><strong>Ano Letivo:</strong> @Model.Turma.AnoLetivo</p>
+        <p><strong>Professores:</strong> @Model.Turma.Professores?.Count</p>
+    </div>
+
+    <h3 style="margin-top:40px;">Média de Risco de Evasão da Turma: @media.ToString("F2")%</h3>
+    <div class="grafico-container">
+        <canvas id="graficoEvasaoTurma"></canvas>
+    </div>
+
+    <h3 style="margin-top:40px;">Alunos em Risco de Evasão</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Aluno</th>
+                <th>Risco (%)</th>
+                <th>Motivos</th>
+                <th>Gráfico</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.AlunosEmRisco.Count; i++)
+            {
+                var aluno = Model.AlunosEmRisco[i];
+                <tr>
+                    <td>@aluno.StudentName</td>
+                    <td>@(aluno.RiskScore * 100).ToString("F1")%</td>
+                    <td>@string.Join(", ", aluno.EvasionReasons)</td>
+                    <td>
+                        <canvas id="graficoAluno_@i" width="150" height="150"></canvas>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div style="text-align:center; margin-top:30px;">
+        <a asp-action="Index" class="btn-voltar">← Voltar</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Gráfico da média da turma
+        const media = @media.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+        const restante = (100 - media).toFixed(2);
+
+        new Chart(document.getElementById('graficoEvasaoTurma'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Risco Médio', 'Restante'],
+                datasets: [{
+                    data: [media, restante],
+                    backgroundColor: ['#e74c3c', '#2ecc71']
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Risco Médio de Evasão da Turma'
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Gráficos individuais por aluno
+        const alunos = @Html.Raw(Json.Serialize(Model.AlunosEmRisco.Select(a => a.RiskScore * 100)));
+        alunos.forEach((risco, index) => {
+            const restante = 100 - risco;
+            new Chart(document.getElementById(`graficoAluno_${index}`), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Risco', 'Seguro'],
+                    datasets: [{
+                        data: [risco, restante],
+                        backgroundColor: ['#f39c12', '#3498db']
+                    }]
+                },
+                options: {
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .relatorio-container {
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 40px;
+        }
+
+        .grafico-container {
+            max-width: 400px;
+            margin: 0 auto 50px auto;
+            padding: 30px;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f2f5;
+        }
+
+        .btn-voltar {
+            display: inline-block;
+            margin-top: 20px;
+            background-color: #95a5a6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+            .btn-voltar:hover {
+                background-color: #7f8c8d;
+            }
+    </style>
+}
