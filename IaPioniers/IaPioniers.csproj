@@ -7,8 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Views\Shared\_NavHeader.cshtml.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="unifenas_api_python\cache\" />
     <Folder Include="unifenas_api_python\local_data\" />
+    <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Views\Shared\_NavHeader.cshtml.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +32,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 

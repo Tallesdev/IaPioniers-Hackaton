@@ -172,10 +172,17 @@ async def collect_all_moodle_logs_and_update_cache(email, password, api_base_url
                 print(f"[{datetime.now()}] Erro no processamento do log para o usuário {user_id}: {res}")
             elif res:
                 for log in res:
-                    log['user_id'] = user_id
-                    log['user_name'] = user_name
-                    log['user_lastaccess'] = user_info.get('user_lastaccess')
-                    new_logs.append(log)
+                    log_entry = {
+                        'user_id': user_id,
+                        'user_name': user_name,
+                        'user_lastaccess': user_info.get('user_lastaccess'),
+                        'date': log.get('date'),
+                        'eventname': log.get('eventname', ''), # Garante que 'eventname' existe
+                        'action': log.get('action', ''),       # Garante que 'action' existe
+                        'course_fullname': log.get('course_fullname', 'Curso Desconhecido'),
+                        # Adicione outras chaves que você espera da API com valores padrão se necessário
+                    }
+                    new_logs.append(log_entry)
     
     df_new_logs = pd.DataFrame(new_logs)
     print(f"[{datetime.now()}] DataFrame de novos logs coletados. Total de linhas: {len(df_new_logs)}")
@@ -189,11 +196,19 @@ async def collect_all_moodle_logs_and_update_cache(email, password, api_base_url
         
         df_new_logs = df_new_logs.dropna(subset=['date'])
         
-        if 'course_fullname' not in df_new_logs.columns:
-            df_new_logs['course_fullname'] = 'Curso Desconhecido'
+        # Assegura que 'course_fullname' existe, movido para dentro do loop para ser mais robusto
+        # if 'course_fullname' not in df_new_logs.columns:
+        #     df_new_logs['course_fullname'] = 'Curso Desconhecido'
 
         # Combinar logs existentes com novos logs
         if not df_existing_logs.empty:
+            # Reindexa as colunas de df_existing_logs para garantir que 'eventname' e 'action' existam
+            # antes da concatenação, se eles forem adicionados dinamicamente no df_new_logs
+            # Isso é importante caso o cache antigo não tivesse essas colunas.
+            missing_cols_in_existing = [col for col in ['eventname', 'action', 'course_fullname'] if col not in df_existing_logs.columns]
+            for col in missing_cols_in_existing:
+                df_existing_logs[col] = '' # Adiciona colunas ausentes com valor padrão
+
             df_combined_logs = pd.concat([df_existing_logs, df_new_logs], ignore_index=True)
             # Remover duplicatas com base em um conjunto de colunas que identificam um log único
             # Cuidado com 'date' se a granularidade não for exata (pode haver milissegundos diferentes)

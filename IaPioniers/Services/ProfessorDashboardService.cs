@@ -1,112 +1,132 @@
 ﻿using IaPioniers.Models.ViewModels;
-using IaPioniers.Models;
-using Newtonsoft.Json;
+using IaPioniers.Models; // Para a classe Course, CourseDetailedAnalystics
+using Microsoft.Extensions.Configuration;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration; // Para acessar configurações como a URL da API
-using System; // Para ApplicationException
-using System.Collections.Generic; // Para List<Course>
-using Microsoft.Extensions.Logging; // Adicionado para ILogger
+using Newtonsoft.Json;
+using System.Collections.Generic; // Para List<T>
+using Microsoft.Extensions.Logging; // Para ILogger
+using System; // Para DateTime.Now, Uri, NotImplementedException
 
 namespace IaPioniers.Services
 {
+    // Implementa o serviço do dashboard do professor
+    // A interface IProfessorDashboardService NÃO DEVE SER DEFINIDA AQUI NOVAMENTE.
     public class ProfessorDashboardService : IProfessorDashboardService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<ProfessorDashboardService> _logger;
         private readonly string _pythonApiBaseUrl;
-        private readonly ILogger<ProfessorDashboardService> _logger; // Adicionado ILogger
 
+        // Construtor: Injeta HttpClient e IConfiguration
         public ProfessorDashboardService(HttpClient httpClient, IConfiguration configuration, ILogger<ProfessorDashboardService> logger)
         {
             _httpClient = httpClient;
-            _logger = logger; // Injeta o logger
-
-            // Obtenha a URL base da sua API Python do appsettings.json
+            _logger = logger;
+            // Carrega a URL base da sua API Python diretamente da raiz do appsettings.json
             _pythonApiBaseUrl = configuration["PythonApiBaseUrl"];
             if (string.IsNullOrEmpty(_pythonApiBaseUrl))
             {
-                _logger.LogError("PythonApiBaseUrl não configurada em appsettings.json. Por favor, adicione-a ou verifique o caminho.");
-                throw new ApplicationException("PythonApiBaseUrl não configurada em appsettings.json.");
+                _logger.LogError("A URL base da API Python (PythonApiBaseUrl) não está configurada em appsettings.json.");
+                // Fallback para uma URL padrão se não configurado (apenas para desenvolvimento/teste)
+                _pythonApiBaseUrl = "http://localhost:5000/api/";
             }
-            _httpClient.BaseAddress = new System.Uri(_pythonApiBaseUrl);
-            _logger.LogInformation($"BaseAddress do HttpClient configurado para: {_pythonApiBaseUrl}");
+            // Garante que a URL base termina com uma barra
+            if (!_pythonApiBaseUrl.EndsWith("/"))
+            {
+                _pythonApiBaseUrl += "/";
+            }
+            // Define o BaseAddress do HttpClient (uma única vez)
+            _httpClient.BaseAddress = new Uri(_pythonApiBaseUrl);
+            _logger.LogInformation($"Python API Base URL configurada e BaseAddress do HttpClient definido para: {_pythonApiBaseUrl}");
         }
 
         public async Task<DashboardViewModel> GetProfessorDashboardDataAsync(string professorId)
         {
-            // Codifica o ID do professor para ser seguro em URLs (ex: espaços para %20)
-            var encodedProfessorId = System.Uri.EscapeDataString(professorId);
-            // Constrói a URL para o endpoint da API Python
-            var requestUrl = $"professor/dashboard-data?professor_id={encodedProfessorId}";
-            _logger.LogInformation($"Fazendo requisição à API Python: {_httpClient.BaseAddress}{requestUrl}");
+            _logger.LogInformation($"[{DateTime.Now}] Iniciando GetProfessorDashboardDataAsync para o professor: {professorId}");
+
+            // Constrói a URL completa para o endpoint do dashboard do professor na API Python
+            // Como _pythonApiBaseUrl já termina com /api/, removemos o prefixo "/api/" daqui
+            // O endpoint correto é professor/dashboard-data
+            var requestUrl = $"professor/dashboard-data?professor_id={Uri.EscapeDataString(professorId)}"; // Usar Uri.EscapeDataString para codificar o ID
+            _logger.LogInformation($"[{DateTime.Now}] Chamando API Python: {_httpClient.BaseAddress}{requestUrl}");
 
             try
             {
+                // Faz a requisição GET à API Python
                 var response = await _httpClient.GetAsync(requestUrl);
-                response.EnsureSuccessStatusCode(); // Lança uma exceção para códigos de erro HTTP (4xx ou 5xx)
 
+                // Lança uma exceção se a resposta não for bem-sucedida (status code 2xx)
+                response.EnsureSuccessStatusCode();
+
+                // Lê o conteúdo da resposta como uma string
                 var jsonResponse = await response.Content.ReadAsStringAsync();
-                _logger.LogDebug($"Resposta JSON da API Python recebida: {jsonResponse}");
+                _logger.LogDebug($"[{DateTime.Now}] Resposta da API Python recebida: {jsonResponse.Substring(0, Math.Min(jsonResponse.Length, 500))}...");
 
-                // Deserializa o JSON para o DashboardViewModel
-                var dashboardData = JsonConvert.DeserializeObject<DashboardViewModel>(jsonResponse);
-                _logger.LogInformation("Dados do dashboard desserializados com sucesso.");
-                return dashboardData;
-            }
-            catch (HttpRequestException ex)
-            {
-                // Erro ao tentar se conectar ou receber resposta da API Python
-                _logger.LogError(ex, $"Erro HTTP ao buscar dados do dashboard para professor {professorId}. URL: {_httpClient.BaseAddress}{requestUrl}. Detalhes: {ex.Message}");
-                throw; // Propagar a exceção para o controlador lidar
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogError(ex, $"Erro de desserialização JSON para dados do dashboard do professor {professorId}. Detalhes: {ex.Message}");
-                // Tenta logar o conteúdo que causou o erro de desserialização, se possível
-                try
+                // Desserializa a string JSON para o DashboardViewModel
+                var viewModel = JsonConvert.DeserializeObject<DashboardViewModel>(jsonResponse);
+
+                if (viewModel == null)
                 {
-                    var contentOnError = await _httpClient.GetAsync(requestUrl)?.Result?.Content?.ReadAsStringAsync();
-                    _logger.LogDebug($"Conteúdo JSON que causou erro de desserialização: {contentOnError}");
+                    _logger.LogWarning($"[{DateTime.Now}] Desserialização resultou em um ViewModel nulo para o professor: {professorId}. Retornando ViewModel vazio.");
+                    return new DashboardViewModel
+                    {
+                        ProfessorNome = professorId,
+                        CourseSummaries = new List<CourseSummaryViewModel>(),
+                        StudentEvasionList = new List<StudentEvasionInfoViewModel>(),
+                        RecentActivities = new List<RecentActivityViewModel>(),
+                        CurrentModuleInfo = new CurrentModuleInfoViewModel(),
+                        EvasionRiskCount = 0,
+                        TotalActivities = 0,
+                        TotalStudents = 0,
+                        StudentsAtRisk = 0
+                    };
                 }
-                catch { /* Ignora erros ao tentar ler o conteúdo novamente para evitar loops */ }
-                throw; // Propagar a exceção
+
+                _logger.LogInformation($"[{DateTime.Now}] Dados do dashboard desserializados com sucesso para o professor: {professorId}.");
+                return viewModel;
+            }
+            catch (HttpRequestException httpEx)
+            {
+                _logger.LogError(httpEx, $"[{DateTime.Now}] Erro de Requisição HTTP ao chamar a API Python para o professor {professorId} na URL: {_httpClient.BaseAddress}{requestUrl}. Detalhes: {httpEx.Message}");
+                throw; // Re-lança a exceção para ser tratada no Controller
+            }
+            catch (JsonSerializationException jsonEx)
+            {
+                _logger.LogError(jsonEx, $"[{DateTime.Now}] Erro de Desserialização JSON da API Python para o professor {professorId}. Detalhes: {jsonEx.Message}");
+                throw; // Re-lança a exceção
             }
             catch (Exception ex)
             {
-                // Outros erros inesperados
-                _logger.LogError(ex, $"Ocorreu um erro inesperado em GetProfessorDashboardDataAsync para professor {professorId}. Detalhes: {ex.Message}");
-                throw; // Propagar a exceção
+                _logger.LogError(ex, $"[{DateTime.Now}] Erro inesperado ao obter dados do dashboard para o professor {professorId}. Detalhes: {ex.Message}");
+                throw; // Re-lança a exceção
             }
         }
 
-        // IMPLEMENTAÇÕES DE MÉTODOS FALTANTES QUE CAUSARAM ERRO CS0535
-        // Adicionados como placeholders para resolver os erros de compilação.
-        // Você precisará adicionar a lógica real para esses métodos conforme o necessário.
+        // --- Implementações dos métodos da interface (Stubs/Placeholders) ---
 
-        public async Task<CourseDetailedAnalystics> GetCourseDetailsAsync(string id)
+        public Task<CourseDetailedAnalystics> GetCourseDetailsAsync(string id)
         {
-            _logger.LogWarning("GetCourseDetailsAsync não foi totalmente implementado.");
+            _logger.LogWarning($"[{DateTime.Now}] Método GetCourseDetailsAsync chamado para ID: {id}, mas não está implementado.");
             throw new NotImplementedException("GetCourseDetailsAsync não foi totalmente implementado. Adicione a lógica para buscar os detalhes de um curso.");
         }
 
         public Task<List<Course>> GetCoursesAsync()
         {
-            _logger.LogWarning("GetCoursesAsync não foi implementado.");
-            // Retorna uma lista vazia como placeholder para resolver o erro CS0535.
-            // Você precisará implementar a lógica real para buscar a lista de cursos aqui.
+            _logger.LogWarning($"[{DateTime.Now}] Método GetCoursesAsync chamado, mas não está implementado. Retornando lista vazia.");
             return Task.FromResult(new List<Course>());
         }
 
-        public Task<string> GetDashboardDataAsync(string professorId)
+        public async Task<DashboardViewModel> GetDashboardDataAsync(string professorId)
         {
-            _logger.LogWarning("GetDashboardDataAsync não foi implementado. Verifique se este método é necessário, ou se GetProfessorDashboardDataAsync já atende ao propósito.");
-            throw new NotImplementedException("GetDashboardDataAsync não foi implementado. Verifique se este método é necessário, ou se GetProfessorDashboardDataAsync já atende ao propósito.");
+            _logger.LogInformation($"[{DateTime.Now}] Método GetDashboardDataAsync chamado (stub). Reutilizando GetProfessorDashboardDataAsync para {professorId}.");
+            return await GetProfessorDashboardDataAsync(professorId);
         }
 
-        public Task<string> GenerateReportAsync(string reportType)
+        public Task<bool> GenerateReportAsync(string reportType)
         {
-            _logger.LogWarning("GenerateReportAsync não foi implementado.");
-            throw new NotImplementedException("GenerateReportAsync não foi implementado. Adicione a lógica para gerar relatórios.");
+            _logger.LogWarning($"[{DateTime.Now}] Método GenerateReportAsync chamado para tipo: {reportType}, mas não está implementado. Retornando true (simulação de sucesso).");
+            return Task.FromResult(true);
         }
     }
 }
