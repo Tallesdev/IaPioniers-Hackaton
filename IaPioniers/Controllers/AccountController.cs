@@ -7,7 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Hosting; // Adicionado para IWebHostEnvironment
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.CodeAnalysis.CSharp.Syntax; // Adicionado para IWebHostEnvironment
 
 namespace IaPioniers.Controllers
 {
@@ -75,22 +76,30 @@ namespace IaPioniers.Controllers
         {
             if (ModelState.IsValid)
             {
+
                 var result = await _signInManager.PasswordSignInAsync(
                     model.Email, model.Senha, isPersistent: false, lockoutOnFailure: false);
 
                 if (result.Succeeded)
                 {
                     var user = await _userManager.FindByEmailAsync(model.Email);
+<<<<<<< Talles(duda)
                     if (user != null)
                     {
                         // REDIRECIONA PARA ProfessorDashboard/ResumoDeDados PASSANDO O NOME COMPLETO DO USUÁRIO
                         return RedirectToAction("ResumoDeDados", "ProfessorDashboard", new { professorId = user.NomeCompleto });
                     }
                     // Se o usuário for nulo por algum motivo, redireciona para a home como fallback
+=======
+                    return RedirectToAction("ResumoDeDados", "ProfessorDashboard");
+                }
+                else
+                {
+>>>>>>> Duda(Talles)
                     return RedirectToAction("Index", "Home");
                 }
 
-                ModelState.AddModelError("", "Login inválido. Verifique email e senha.");
+                    ModelState.AddModelError("", "Login inválido. Verifique email e senha.");
             }
             return View(model);
         }
@@ -127,8 +136,12 @@ namespace IaPioniers.Controllers
                     // Por enquanto, apenas registra o usuário.
                     // A lógica de atribuição de roles de Coordenador/Administrador virá depois.
                     await _signInManager.SignInAsync(user, isPersistent: false);
+<<<<<<< Talles(duda)
                     // REDIRECIONA PARA ProfessorDashboard/ResumoDeDados APÓS REGISTRO
                     return RedirectToAction("ResumoDeDados", "ProfessorDashboard", new { professorId = user.NomeCompleto });
+=======
+                    return RedirectToAction("ResumoDeDados", "ProfessorDashboard");
+>>>>>>> Duda(Talles)
                 }
 
                 foreach (var error in result.Errors)

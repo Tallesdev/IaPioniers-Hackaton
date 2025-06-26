@@ -3,21 +3,21 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using IaPioniers.Data;
 using IaPioniers.Models;
-using IaPioniers.Models.Models_DB; // Mantenha se ApplicationUser está aqui
+using IaPioniers.Models.Models_DB; 
 using System.Net.Http;
 using System;
-using Microsoft.Extensions.Logging; // Garantir import de ILogger
+using Microsoft.Extensions.Logging; 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Configuração da Conexão com o Banco de Dados ---
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// --- Configuração do Identity (Autenticação/Autorização) ---
+
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -30,26 +30,26 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// --- Configuração de Logging ---
+// --- Configuraï¿½ï¿½o de Logging ---
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
-builder.Logging.SetMinimumLevel(LogLevel.Debug); // Define o nível mínimo para DEBUG para depuração
+builder.Logging.SetMinimumLevel(LogLevel.Debug); // Define o nï¿½vel mï¿½nimo para DEBUG para depuraï¿½ï¿½o
 
-// --- Injeção de Dependência de Serviços ---
+// --- Injeï¿½ï¿½o de Dependï¿½ncia de Serviï¿½os ---
 
-// Serviço para mapeamento Professor-Curso (Singletone é OK, pois os dados são estáticos ou carregados uma vez)
+// Serviï¿½o para mapeamento Professor-Curso (Singletone ï¿½ OK, pois os dados sï¿½o estï¿½ticos ou carregados uma vez)
 builder.Services.AddSingleton<ProfessorCourseMappingService>();
 
-// Configuração para o HttpClient que será injetado em ProfessorDashboardService
+// Configuraï¿½ï¿½o para o HttpClient que serï¿½ injetado em ProfessorDashboardService
 builder.Services.AddHttpClient<IProfessorDashboardService, ProfessorDashboardService>(client =>
 {
-    // CORREÇÃO AQUI: Acessa a URL base da API Python do appsettings.json com a chave correta
+    // CORREï¿½ï¿½O AQUI: Acessa a URL base da API Python do appsettings.json com a chave correta
     var pythonApiBaseUrl = builder.Configuration["PythonApiBaseUrl"];
 
     if (string.IsNullOrEmpty(pythonApiBaseUrl))
     {
-        // Fallback: Se a chave não for encontrada/configurada, usa um endereço padrão.
+        // Fallback: Se a chave nï¿½o for encontrada/configurada, usa um endereï¿½o padrï¿½o.
         client.BaseAddress = new Uri("http://localhost:5000/"); // Garantir que termina com '/'
     }
     else
@@ -62,32 +62,32 @@ builder.Services.AddHttpClient<IProfessorDashboardService, ProfessorDashboardSer
 
 // Adiciona suporte a controladores MVC (com Views)
 builder.Services.AddControllersWithViews();
-// Adiciona suporte a Razor Pages (se você as usa)
+// Adiciona suporte a Razor Pages (se vocï¿½ as usa)
 builder.Services.AddRazorPages();
 
-// --- Construção do Aplicativo ---
+// --- Construï¿½ï¿½o do Aplicativo ---
 var app = builder.Build();
 
-// --- Configuração do Pipeline de Requisições HTTP ---
+// --- Configuraï¿½ï¿½o do Pipeline de Requisiï¿½ï¿½es HTTP ---
 
-// Configura o middleware de tratamento de exceções para ambiente de Desenvolvimento
+// Configura o middleware de tratamento de exceï¿½ï¿½es para ambiente de Desenvolvimento
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage(); // Exibe erros detalhados em dev
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error"); // Redireciona para /Home/Error em produção
+    app.UseExceptionHandler("/Home/Error"); // Redireciona para /Home/Error em produï¿½ï¿½o
     app.UseHsts();
 }
 
 app.UseHttpsRedirection(); // Redireciona HTTP para HTTPS
-app.UseStaticFiles();      // Permite servir arquivos estáticos (CSS, JS, imagens)
+app.UseStaticFiles();      // Permite servir arquivos estï¿½ticos (CSS, JS, imagens)
 
 app.UseRouting();          // Habilita o roteamento
 
-app.UseAuthentication();   // Habilita autenticação (Identity)
-app.UseAuthorization();    // Habilita autorização
+app.UseAuthentication();   // Habilita autenticaï¿½ï¿½o (Identity)
+app.UseAuthorization();    // Habilita autorizaï¿½ï¿½o
 
 // --- Mapeamento de Rotas ---
 
@@ -96,7 +96,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}"); // Alterado para Account e Login
 
-// Mapeia rotas de Razor Pages (se você as usa)
+// Mapeia rotas de Razor Pages (se vocï¿½ as usa)
 app.MapRazorPages();
 
 // Mapeia rotas para controladores com o atributo [ApiController] (se houver APIs RESTful)

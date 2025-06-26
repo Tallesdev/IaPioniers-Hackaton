@@ -241,7 +241,8 @@
 
                 $.post('/Account/Login', loginData)
                     .done(function () {
-                        window.location.href = '/Home/Index';
+                        // window.location.reload();
+                         window.location.href = '/Home/Index';
                     })
                     .fail(function () {
                         alert('Erro ao fazer login. Verifique seus dados.');
