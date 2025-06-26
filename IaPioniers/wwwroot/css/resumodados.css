@@ -1,0 +1,457 @@
+﻿/* wwwroot/css/resumodados.css */
+
+/* Estilos Específicos para a página Resumo de Dados */
+
+/* Importante: Assumimos que o _Layout.cshtml e dashboard.css (se usado globalmente)
+   já definem estilos para 'body', '.main-content', '.top-header', '.user-info',
+   e a sidebar. Este CSS se foca em elementos únicos ou que precisam de sobrescrita. */
+
+/* Ajustes para o cabeçalho se necessário, caso .top-header do dashboard.css não seja suficiente */
+/* .main-content .top-header { ... } */
+
+/* ------------------------------------ */
+/* Seção de Cartões (Cards Section) */
+/* ------------------------------------ */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Layout responsivo de grid */
+    gap: 30px; /* Espaçamento maior entre os cartões */
+    margin-bottom: 40px;
+}
+
+.card-resumo {
+    background-color: #fff;
+    border-radius: 15px; /* Mais arredondado */
+    padding: 30px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); /* Sombra mais pronunciada */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centraliza o conteúdo verticalmente */
+    align-items: center; /* Centraliza o conteúdo horizontalmente */
+    text-align: center;
+    color: #fff; /* Cor do texto padrão para estes cards */
+    height: 200px; /* Altura um pouco maior para melhor visual */
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
+}
+
+    .card-resumo:hover {
+        transform: translateY(-8px); /* Efeito de elevação ao passar o mouse */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-resumo.evasao {
+        background: linear-gradient(135deg, #FF4500, #FF6347); /* Tom de vermelho mais vibrante para evasão */
+    }
+
+    .card-resumo.relatorio {
+        /* Nova cor azul para o botão de relatório */
+        background: linear-gradient(135deg, #5faee8, #4a9ad9); /* Gradiente para o novo azul */
+    }
+
+    .card-resumo h2 {
+        font-size: 4em; /* Título grande, tamanho ajustado */
+        margin: 0;
+        line-height: 1;
+        color: #fff;
+        border-bottom: none;
+        padding-bottom: 0;
+        font-weight: 700;
+    }
+
+    .card-resumo p {
+        font-size: 1.2em; /* Texto um pouco menor para ajustar alinhamento */
+        margin-top: 15px;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .card-resumo button {
+        background-color: rgba(255, 255, 255, 0.25); /* Fundo branco semi-transparente */
+        border: 1px solid rgba(255, 255, 255, 0.6); /* Borda branca semi-transparente */
+        color: #fff;
+        padding: 12px 25px;
+        border-radius: 25px; /* Botão mais arredondado */
+        cursor: pointer;
+        font-size: 1.1em;
+        margin-top: 20px;
+        transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+        .card-resumo button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+            border-color: #fff;
+            transform: scale(1.05); /* Pequeno zoom no hover */
+        }
+
+/* ------------------------------------ */
+/* Seção da Tabela de Alunos */
+/* ------------------------------------ */
+.students-table-section {
+    background-color: #2c3e50; /* Nova cor de fundo para a seção da tabela */
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    margin-top: 40px; /* Adiciona espaço acima desta seção */
+    color: #ecf0f1; /* Cor do texto para contraste com o fundo escuro */
+}
+
+.filter-section {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Espaçamento maior */
+    margin-bottom: 30px;
+}
+
+    .filter-section label {
+        font-weight: 700;
+        color: #ecf0f1; /* Cor do texto para contraste */
+        font-size: 1.1em;
+    }
+
+    .filter-section select {
+        padding: 12px 20px; /* Mais preenchimento */
+        border: 1px solid #556c7d; /* Borda mais escura para contraste */
+        border-radius: 10px; /* Mais arredondado */
+        font-size: 1em;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        min-width: 200px;
+        background-color: #3b506b; /* Fundo do select */
+        color: #ecf0f1; /* Cor do texto do select */
+    }
+
+        .filter-section select:focus {
+            border-color: #5faee8; /* Azul claro ao focar */
+            box-shadow: 0 0 0 4px rgba(95, 174, 232, 0.25);
+        }
+
+.students-table-section h3 {
+    margin-top: 0;
+    color: #ecf0f1; /* Cor do texto para contraste */
+    font-size: 2em;
+    border-bottom: 1px solid #556c7d; /* Linha de separação mais escura */
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+    font-weight: 700;
+}
+
+.students-table-section table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px; /* Cantos arredondados para a tabela inteira */
+    overflow: hidden; /* Garante que os cantos arredondados cortem o conteúdo */
+}
+
+.students-table-section th,
+.students-table-section td {
+    border: 1px solid #4a6481; /* Borda mais clara para contraste com o fundo */
+    padding: 15px 20px;
+    text-align: left;
+    vertical-align: middle; /* Alinha o conteúdo verticalmente */
+    color: #ecf0f1; /* Cor do texto para contraste */
+}
+
+.students-table-section th {
+    background-color: #3b506b; /* Fundo do cabeçalho mais escuro */
+    font-weight: 700;
+    color: #ecf0f1; /* Cor do texto do cabeçalho */
+    text-transform: uppercase;
+    font-size: 0.95em;
+    letter-spacing: 0.5px;
+}
+
+.students-table-section tr:nth-child(even) {
+    background-color: #354960; /* Cor de fundo para linhas pares */
+}
+
+.students-table-section tr:hover {
+    background-color: #4a6481; /* Fundo mais claro no hover */
+    cursor: pointer;
+}
+
+/* Estilo para a probabilidade de evasão (bolinhas coloridas) */
+.evasion-probability-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espaçamento entre bolinha e texto */
+    font-weight: 600;
+}
+
+.evasion-dot {
+    width: 14px; /* Bolinha um pouco maior */
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0; /* Impede que a bolinha encolha */
+    border: 1px solid rgba(0,0,0,0.1); /* Pequena borda para definição */
+}
+
+    .evasion-dot.green {
+        background-color: #28a745;
+    }
+    /* Baixo risco */
+    .evasion-dot.orange {
+        background-color: #ffc107;
+    }
+    /* Médio risco */
+    .evasion-dot.red {
+        background-color: #dc3545;
+    }
+/* Alto risco */
+
+/* Estilo do botão "Gerar Email" */
+.generate-email-btn {
+    background-color: #5faee8; /* Novo azul do botão de relatório */
+    color: #fff;
+    padding: 8px 15px; /* Ajusta padding para ser um pouco menor que os cards */
+    border-radius: 20px; /* Mais arredondado */
+    border: none;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    display: inline-flex; /* Permite alinhar ícone e texto */
+    align-items: center;
+    gap: 8px; /* Espaço entre texto e ícone */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra para o botão */
+}
+
+    .generate-email-btn:hover {
+        background-color: #4a9ad9; /* Tom mais escuro do azul no hover */
+        transform: translateY(-2px); /* Pequena elevação */
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); /* Sombra mais pronunciada */
+    }
+
+    /* Ícone de email dentro do botão, se houver */
+    .generate-email-btn i {
+        font-size: 1em; /* Ajusta o tamanho do ícone */
+    }
+
+
+/* Estilos para o Modal/Popup de E-mail (mantidos como antes) */
+.email-modal {
+    display: none; /* Escondido por padrão */
+    position: fixed; /* Fixado na tela */
+    z-index: 1000; /* Acima de outros elementos */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.6); /* Fundo escuro semi-transparente */
+    justify-content: center;
+    align-items: center;
+}
+
+.email-modal-content {
+    background-color: #fff;
+    margin: auto;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 700px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    position: relative;
+    animation: fadeIn 0.3s ease-out; /* Animação de fade-in */
+}
+
+    .email-modal-content h3 {
+        margin-top: 0;
+        color: #333;
+        font-size: 1.8em;
+        border-bottom: 1px solid #e0e7eb;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .email-modal-content textarea {
+        width: calc(100% - 20px); /* Ajusta largura com padding */
+        height: 250px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 1em;
+        line-height: 1.5;
+        resize: vertical;
+        margin-bottom: 20px;
+    }
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+    .modal-actions button {
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.2s ease;
+    }
+
+    .modal-actions .copy-btn {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+    }
+
+        .modal-actions .copy-btn:hover {
+            background-color: #0056b3;
+        }
+
+    .modal-actions .close-btn {
+        background-color: #ccc;
+        color: #333;
+        border: none;
+    }
+
+        .modal-actions .close-btn:hover {
+            background-color: #bbb;
+        }
+
+.loading-indicator {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.2em;
+    color: #007bff;
+    display: none; /* Escondido por padrão */
+}
+
+/* Keyframe para animação de fade-in */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mensagem de "Nenhum dado" para a tabela de alunos */
+.no-data {
+    text-align: center;
+    padding: 30px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Responsividade (duplicada da sua entrada, consolidada) */
+@media (max-width: 1024px) {
+    .dashboard-container {
+        margin: 15px;
+        border-radius: 10px;
+    }
+
+    .main-content {
+        padding: 20px 25px;
+    }
+
+    .top-header h1 {
+        font-size: 2em;
+    }
+
+    .cards {
+        grid-template-columns: 1fr; /* Cartões em uma única coluna */
+    }
+
+    .card-resumo {
+        height: 180px; /* Mantém altura no tablet */
+    }
+}
+
+@media (max-width: 768px) {
+    /* Ajustes para o layout principal, se o body for flex-direction: column */
+    /* Estas regras devem estar no _Layout.cshtml.css ou dashboard.css principal */
+    /* body { flex-direction: column; } */
+    /* .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); } */
+    /* .sidebar h2 { width: 100%; margin-bottom: 15px; font-size: 1.5em; } */
+    /* .sidebar nav { display: flex; flex-wrap: wrap; justify-content: center; width: 100%; } */
+    /* .sidebar nav a { padding: 10px 15px; font-size: 0.9em; border-left: none; border-bottom: 3px solid transparent; } */
+    /* .sidebar nav a.active { border-left-color: transparent; border-bottom-color: #007bff; } */
+    /* .sidebar .logout { width: 100%; text-align: center; margin-top: 15px; border-top: none; padding: 10px 0; background-color: #4e4f5a; } */
+
+    .main-content {
+        padding: 15px;
+    }
+
+    .top-header {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 25px;
+        padding-bottom: 10px;
+    }
+
+        .top-header h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+    .user-info {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+        .user-info img {
+            width: 35px;
+            height: 35px;
+        }
+
+    .cards {
+        gap: 20px;
+    }
+
+    .card-resumo {
+        height: 160px; /* Reduz altura no mobile */
+        padding: 20px;
+    }
+
+        .card-resumo h2 {
+            font-size: 4em;
+        }
+
+        .card-resumo p {
+            font-size: 1.1em;
+        }
+
+        .card-resumo button {
+            padding: 10px 20px;
+            font-size: 0.9em;
+        }
+
+    .filter-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+        .filter-section select {
+            width: 100%; /* Ocupa largura total */
+            min-width: unset;
+        }
+
+    .students-table-section h3 {
+        font-size: 1.6em;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .students-table-section th,
+    .students-table-section td {
+        padding: 10px 12px;
+        font-size: 0.8em;
+    }
+
+    .evasion-dot {
+        width: 10px;
+        height: 10px;
+    }
+}

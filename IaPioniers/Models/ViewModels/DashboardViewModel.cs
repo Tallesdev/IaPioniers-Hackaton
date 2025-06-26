@@ -29,10 +29,10 @@ namespace IaPioniers.Models.ViewModels
         [JsonProperty("recentActivities")]
         public List<RecentActivityViewModel> RecentActivities { get; set; }
 
-        [JsonProperty("evasionRiskCount")]
+        [JsonProperty("evasionRiskCount")] // Mapeia para o novo campo na API Python
         public int EvasionRiskCount { get; set; }
 
-        [JsonProperty("studentEvasionList")]
+        [JsonProperty("studentEvasionList")] // Mapeia para a nova lista na API Python
         public List<StudentEvasionInfoViewModel> StudentEvasionList { get; set; }
 
         public DashboardViewModel()
@@ -92,21 +92,33 @@ namespace IaPioniers.Models.ViewModels
         public string Usuario { get; set; }
     }
 
+    // CLASSE ATUALIZADA: ViewModel para informações de evasão de um único aluno
     public class StudentEvasionInfoViewModel
     {
-        [JsonProperty("StudentName")]
+        [JsonProperty("studentId")] // Novo campo
+        public string StudentId { get; set; }
+
+        [JsonProperty("studentName")]
         public string StudentName { get; set; }
 
-        [JsonProperty("CourseName")] // NOVA PROPRIEDADE
+        [JsonProperty("courseName")] // Novo campo
         public string CourseName { get; set; }
 
-        [JsonProperty("TotalAccesses")]
+        [JsonProperty("totalAccesses")] // Já existia, mas o nome da propriedade JSON foi adicionado
         public int TotalAccesses { get; set; }
 
-        [JsonProperty("DaysWithoutAccess")]
+        [JsonProperty("daysWithoutAccess")] // Já existia, mas o nome da propriedade JSON foi adicionado
         public int DaysWithoutAccess { get; set; }
 
-        [JsonProperty("EvasionProbability")]
-        public int EvasionProbability { get; set; }
+        [JsonProperty("riskScore")] // Alterado de EvasionProbability e nome da propriedade JSON
+        public int RiskScore { get; set; } // 0-100
+
+        [JsonProperty("evasionReasons")] // Novo campo
+        public List<string> EvasionReasons { get; set; }
+
+        public StudentEvasionInfoViewModel()
+        {
+            EvasionReasons = new List<string>(); // Inicializa a lista para evitar NullReferenceException
+        }
     }
 }
