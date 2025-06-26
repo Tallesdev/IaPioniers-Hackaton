@@ -17,20 +17,18 @@
 
     <div class="cards">
         <div class="card card-class">
-            @* Changed from card-courses to card-class as per CSS and screenshot *@
             <img src="~/images/caderno.png" alt="Cursos" class="card-image">
             <div class="card-title">Cursos</div>
-            <div class="card-details">36 cursos</div> @* Changed from p.courses-count to div.card-details as per CSS *@
-            <a href="#" class="card-button secondary">Ver cursos</a> @* Changed from btn btn-primary-outline to card-button secondary *@
+            <div class="card-details"><span id="coursesCount">Carregando...</span> cursos</div>
+            <a href="#" class="card-button secondary">Ver cursos</a>
         </div>
 
         <div class="card card-summary">
-            @* Combined card-summary and bg-blue, as card-summary in CSS already handles background *@
-            <div class="card-title">Resumo dos Cursos</div> @* Changed from card-header to card-title as per CSS *@
-            <div class="card-number">112</div> @* Changed from summary-number to card-number as per CSS *@
-            <div class="card-title">Alunos</div> @* Using card-title for label as per screenshot visual hierarchy *@
-            <div class="card-number">36</div> @* Changed from summary-number to card-number as per CSS *@
-            <div class="card-title">Cursos Registrados</div> @* Using card-title for label as per screenshot visual hierarchy *@
+            <div class="card-title">Resumo Geral</div> 
+            <div class="card-number"><span id="totalActivitiesCount">Carregando...</span></div> @* ID para total de atividades *@
+            <div class="card-title">Alunos</div>
+            <div class="card-number"><span id="totalStudentsCount">Carregando...</span></div> @* ID para total de alunos *@
+            <div class="card-title">Cursos Registrados</div> @* Esta é apenas uma label, sem um número direto abaixo dela na sua estrutura atual *@
         </div>
 
         <div class="card card-activities">
@@ -45,7 +43,8 @@
         <div class="evasion-risk-content">
             <div class="chart-container">
                 <div class="pie-chart">
-                    
+                    <canvas id="evasionPieChart"></canvas>
+                
                 </div>
             </div>
             <div class="legend">
@@ -62,6 +61,117 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const professorId = "Coordenador"; // Substitua por um ID dinâmico real
+            console.log("Professor ID sendo usado:", professorId);
+
+            // Obter a URL base da API que veio do Razor
+            const apiBaseUrl =  "@ViewBag.PythonApiBaseUrl"; 
+            console.log("URL Base da API Python:", apiBaseUrl);
+
+            // ---- Chamada para dashboard-data ----
+            // CONCATENAR A URL BASE COM O ENDPOINT ESPECÍFICO
+            fetch(`${apiBaseUrl}professor/dashboard-data?professor_id=${encodeURIComponent(professorId)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Dados do Dashboard:", data);
+
+                    if (data.courseSummaries && Array.isArray(data.courseSummaries)) {
+                        document.getElementById('coursesCount').textContent = data.courseSummaries.length;
+                    } else {
+                        document.getElementById('coursesCount').textContent = 'N/A';
+                    }
+
+                    if (data.totalActivities !== undefined) {
+                        document.getElementById('totalActivitiesCount').textContent = data.totalActivities;
+                    } else {
+                        document.getElementById('totalActivitiesCount').textContent = 'N/A';
+                    }
+                    if (data.totalStudents !== undefined) {
+                        document.getElementById('totalStudentsCount').textContent = data.totalStudents;
+                    } else {
+                        document.getElementById('totalStudentsCount').textContent = 'N/A';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar dados do dashboard:', error);
+                    document.getElementById('coursesCount').textContent = 'Erro';
+                    document.getElementById('totalActivitiesCount').textContent = 'Erro';
+                    document.getElementById('totalStudentsCount').textContent = 'Erro';
+                });
+
+            // ---- Chamada para evasion-report/overall ----
+            // CONCATENAR A URL BASE COM O ENDPOINT ESPECÍFICO
+            fetch(`${apiBaseUrl}evasion-report/overall`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Dados do Relatório de Evasão:", data);
+
+                    const semRisco = data.low_risk_count || data.semRisco || 0;
+                    const medioRisco = data.medium_risk_count || data.medioRisco || 0;
+                    const altoRisco = data.high_risk_count || data.altoRisco || 0;
+
+                    const ctx = document.getElementById('evasionPieChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Sem Risco', 'Risco Médio', 'Risco Alto'],
+                            datasets: [{
+                                data: [semRisco, medioRisco, altoRisco],
+                                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed !== null) {
+                                                label += context.parsed;
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar dados do gráfico de evasão:', error);
+                    const chartContainer = document.getElementById('evasionPieChart').parentNode;
+                    chartContainer.innerHTML = '<p style="text-align: center; color: red;">Erro ao carregar dados do gráfico de evasão.</p>';
+                });
+        });
+    </script>
+        });
+    </script>
+}
 
 <style>
 
