@@ -7,7 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Hosting; // Adicionado para IWebHostEnvironment
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.CodeAnalysis.CSharp.Syntax; // Adicionado para IWebHostEnvironment
 
 namespace IaPioniers.Controllers
 {
@@ -76,16 +77,22 @@ namespace IaPioniers.Controllers
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
-           {
+            {
+
                 var result = await _signInManager.PasswordSignInAsync(
                     model.Email, model.Senha, isPersistent: false, lockoutOnFailure: false);
 
                 if (result.Succeeded)
                 {
+                    var user = await _userManager.FindByEmailAsync(model.Email);
                     return RedirectToAction("ResumoDeDados", "ProfessorDashboard");
                 }
- 
-                ModelState.AddModelError("", "Login inválido. Verifique email e senha.");
+                else
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+
+                    ModelState.AddModelError("", "Login inválido. Verifique email e senha.");
             }
             return View(model);
         }
