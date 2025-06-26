@@ -20,7 +20,7 @@ from evasion_risk_calculator import INACTIVITY_THRESHOLD_GLOBAL_DAYS, INACTIVITY
 
 
 # Configuração do Logger
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s') # <-- GARANTA QUE ESTÁ EM DEBUG
 app = Flask(__name__)
 
 # Definir diretórios base (consistentes com os scripts de previsão)
@@ -37,7 +37,7 @@ os.makedirs(LOCAL_DATA_DIR, exist_ok=True)
 # Caminhos dos arquivos de cache que o app.py consome
 PROCESSED_DATA_FILE = os.path.join(CACHE_DIR, 'processed_evasion_data.csv')
 RISK_SCORES_FILE = os.path.join(CACHE_DIR, 'evasion_predictions_detailed.csv')
-FEATURES_FILE = os.path.join(CACHE_DIR, 'student_features.csv')
+FEATURES_FILE = os.path.join(CACHE_DIR, 'student_features.csv') # Alterado para CSV
 PROFESSOR_MAPPING_FILE = os.path.join(DATA_DIR, 'professor_curso_mapping.json')
 RAW_LOGS_FILE = os.path.join(LOCAL_DATA_DIR, 'raw_logs_cache.pkl')
 
@@ -56,86 +56,88 @@ app.config['DEFAULT_RISK_THRESHOLD_CONFIG'] = DEFAULT_RISK_THRESHOLD
 
 def load_data_to_cache():
     """Carrega os dados processados e de risco de evasão para o cache da aplicação."""
-    app.logger.info(f"[{datetime.now()}] Tentando carregar dados para o cache...")
+    app.logger.info(f"APP: [{datetime.now()}] Tentando carregar dados para o cache...")
     
     # Carregar RAW_LOGS_CACHE
     if os.path.exists(RAW_LOGS_FILE):
         try:
             app.config['RAW_LOGS_CACHE'] = pd.read_pickle(RAW_LOGS_FILE)
-            app.logger.info(f"[{datetime.now()}] '{RAW_LOGS_FILE}' carregado com sucesso. {len(app.config['RAW_LOGS_CACHE'])} linhas.")
+            app.logger.info(f"APP: [{datetime.now()}] '{RAW_LOGS_FILE}' carregado com sucesso. {len(app.config['RAW_LOGS_CACHE'])} linhas.")
             
             if 'time_dt' not in app.config['RAW_LOGS_CACHE'].columns or \
                not pd.api.types.is_datetime64_any_dtype(app.config['RAW_LOGS_CACHE']['time_dt']):
-                app.logger.info(f"[{datetime.now()}] Coluna 'time_dt' não encontrada ou não é datetime. Tentando criar/converter...")
+                app.logger.info(f"APP: [{datetime.now()}] Coluna 'time_dt' não encontrada ou não é datetime. Tentando criar/converter...")
                 if 'time' in app.config['RAW_LOGS_CACHE'].columns:
                     app.config['RAW_LOGS_CACHE']['time_dt'] = pd.to_datetime(app.config['RAW_LOGS_CACHE']['time'], unit='s', errors='coerce')
                 elif 'date' in app.config['RAW_LOGS_CACHE'].columns:
                     app.config['RAW_LOGS_CACHE']['time_dt'] = pd.to_datetime(app.config['RAW_LOGS_CACHE']['date'], errors='coerce')
                 else:
-                    app.logger.warning(f"[{datetime.now()}] Nenhuma coluna 'time' ou 'date' encontrada para criar 'time_dt' no RAW_LOGS_CACHE.")
+                    app.logger.warning(f"APP: [{datetime.now()}] Nenhuma coluna 'time' ou 'date' encontrada para criar 'time_dt' no RAW_LOGS_CACHE.")
                     app.config['RAW_LOGS_CACHE']['time_dt'] = pd.NaT
             
             original_rows = len(app.config['RAW_LOGS_CACHE'])
             app.config['RAW_LOGS_CACHE'].dropna(subset=['time_dt'], inplace=True)
             if len(app.config['RAW_LOGS_CACHE']) < original_rows:
-                app.logger.warning(f"[{datetime.now()}] {original_rows - len(app.config['RAW_LOGS_CACHE'])} linhas removidas de RAW_LOGS_CACHE devido a 'time_dt' inválido.")
+                app.logger.warning(f"APP: [{datetime.now()}] {original_rows - len(app.config['RAW_LOGS_CACHE'])} linhas removidas de RAW_LOGS_CACHE devido a 'time_dt' inválido.")
 
         except Exception as e:
-            app.logger.error(f"[{datetime.now()}] Erro ao carregar ou processar '{RAW_LOGS_FILE}': {e}", exc_info=True)
+            app.logger.error(f"APP: [{datetime.now()}] Erro ao carregar ou processar '{RAW_LOGS_FILE}': {e}", exc_info=True)
             app.config['RAW_LOGS_CACHE'] = pd.DataFrame()
     else:
-        app.logger.warning(f"[{datetime.now()}] Arquivo '{RAW_LOGS_FILE}' não encontrado. Execute 'collect_raw_logs.py' para coletar logs brutos.")
+        app.logger.warning(f"APP: [{datetime.now()}] Arquivo '{RAW_LOGS_FILE}' não encontrado. Execute 'collect_raw_logs.py' para coletar logs brutos.")
         app.config['RAW_LOGS_CACHE'] = pd.DataFrame()
 
     if os.path.exists(PROCESSED_DATA_FILE):
         try:
             app.config['PROCESSED_DATA_CACHE'] = pd.read_csv(PROCESSED_DATA_FILE, encoding='utf-8')
-            app.logger.info(f"[{datetime.now()}] '{PROCESSED_DATA_FILE}' carregado com sucesso. {len(app.config['PROCESSED_DATA_CACHE'])} linhas.")
+            app.logger.info(f"APP: [{datetime.now()}] '{PROCESSED_DATA_FILE}' carregado com sucesso. {len(app.config['PROCESSED_DATA_CACHE'])} linhas.")
         except Exception as e:
-            app.logger.error(f"[{datetime.now()}] Erro ao carregar '{PROCESSED_DATA_FILE}': {e}", exc_info=True)
+            app.logger.error(f"APP: [{datetime.now()}] Erro ao carregar '{PROCESSED_DATA_FILE}': {e}", exc_info=True)
             app.config['PROCESSED_DATA_CACHE'] = pd.DataFrame()
     else:
-        app.logger.warning(f"[{datetime.now()}] Arquivo '{PROCESSED_DATA_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py'.")
+        app.logger.warning(f"APP: [{datetime.now()}] Arquivo '{PROCESSED_DATA_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py'.")
         app.config['PROCESSED_DATA_CACHE'] = pd.DataFrame()
 
     if os.path.exists(RISK_SCORES_FILE):
         try:
             app.config['RISK_SCORES_CACHE'] = pd.read_csv(RISK_SCORES_FILE, encoding='utf-8')
-            app.logger.info(f"[{datetime.now()}] '{RISK_SCORES_FILE}' carregado com sucesso. {len(app.config['RISK_SCORES_CACHE'])} linhas.")
-            app.logger.debug(f"Colunas de RISK_SCORES_CACHE: {app.config['RISK_SCORES_CACHE'].columns.tolist()}")
+            app.logger.info(f"APP: [{datetime.now()}] '{RISK_SCORES_FILE}' carregado com sucesso. {len(app.config['RISK_SCORES_CACHE'])} linhas.")
+            app.logger.debug(f"APP: Colunas de RISK_SCORES_CACHE: {app.config['RISK_SCORES_CACHE'].columns.tolist()}")
+            app.logger.debug(f"APP: Amostra de RISK_SCORES_CACHE:\n{app.config['RISK_SCORES_CACHE'].head().to_string()}")
         except Exception as e:
-            app.logger.error(f"[{datetime.now()}] Erro ao carregar '{RISK_SCORES_FILE}': {e}", exc_info=True)
+            app.logger.error(f"APP: [{datetime.now()}] Erro ao carregar '{RISK_SCORES_FILE}': {e}", exc_info=True)
             app.config['RISK_SCORES_CACHE'] = pd.DataFrame()
     else:
-        app.logger.warning(f"[{datetime.now()}] Arquivo '{RISK_SCORES_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py' ou 'predict_evasion.py'.")
+        app.logger.warning(f"APP: [{datetime.now()}] Arquivo '{RISK_SCORES_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py' ou 'predict_evasion.py'.")
         app.config['RISK_SCORES_CACHE'] = pd.DataFrame()
 
     if os.path.exists(FEATURES_FILE):
         try:
-            app.config['FEATURES_CACHE'] = pd.read_csv(FEATURES_FILE, encoding='utf-8')
-            app.logger.info(f"[{datetime.now()}] '{FEATURES_FILE}' carregado com sucesso. {len(app.config['FEATURES_CACHE'])} linhas.")
-            app.logger.debug(f"Colunas de FEATURES_CACHE: {app.config['FEATURES_CACHE'].columns.tolist()}")
+            app.config['FEATURES_CACHE'] = pd.read_csv(FEATURES_FILE, encoding='utf-8') # Alterado para CSV
+            app.logger.info(f"APP: [{datetime.now()}] '{FEATURES_FILE}' carregado com sucesso. {len(app.config['FEATURES_CACHE'])} linhas.")
+            app.logger.debug(f"APP: Colunas de FEATURES_CACHE: {app.config['FEATURES_CACHE'].columns.tolist()}")
+            app.logger.debug(f"APP: Amostra de FEATURES_CACHE:\n{app.config['FEATURES_CACHE'].head().to_string()}")
         except Exception as e:
-            app.logger.error(f"[{datetime.now()}] Erro ao carregar '{FEATURES_FILE}': {e}", exc_info=True)
+            app.logger.error(f"APP: [{datetime.now()}] Erro ao carregar '{FEATURES_FILE}': {e}", exc_info=True)
             app.config['FEATURES_CACHE'] = pd.DataFrame()
     else:
-        app.logger.warning(f"[{datetime.now()}] Arquivo '{FEATURES_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py'.")
+        app.logger.warning(f"APP: [{datetime.now()}] Arquivo '{FEATURES_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py'.")
         app.config['FEATURES_CACHE'] = pd.DataFrame()
 
     if os.path.exists(PROFESSOR_MAPPING_FILE):
         try:
             with open(PROFESSOR_MAPPING_FILE, 'r', encoding='utf-8') as f:
                 app.config['PROFESSOR_COURSE_MAPPING'] = json.load(f)
-            app.logger.info(f"[{datetime.now()}] '{PROFESSOR_MAPPING_FILE}' carregado com sucesso. {len(app.config['PROFESSOR_COURSE_MAPPING'])} entradas.")
-            app.logger.debug(f"PROFESSOR_COURSE_MAPPING keys: {list(app.config['PROFESSOR_COURSE_MAPPING'].keys())[:5]}")
+            app.logger.info(f"APP: [{datetime.now()}] '{PROFESSOR_MAPPING_FILE}' carregado com sucesso. {len(app.config['PROFESSOR_COURSE_MAPPING'])} entradas.")
+            app.logger.debug(f"APP: PROFESSOR_COURSE_MAPPING keys: {list(app.config['PROFESSOR_COURSE_MAPPING'].keys())[:5]}")
         except json.JSONDecodeError as e:
-            app.logger.error(f"[{datetime.now()}] Erro de decodificação JSON ao carregar '{PROFESSOR_MAPPING_FILE}': {e}", exc_info=True)
+            app.logger.error(f"APP: [{datetime.now()}] Erro de decodificação JSON ao carregar '{PROFESSOR_MAPPING_FILE}': {e}", exc_info=True)
             app.config['PROFESSOR_COURSE_MAPPING'] = {}
         except Exception as e:
-            app.logger.error(f"[{datetime.now()}] Erro ao carregar '{PROFESSOR_MAPPING_FILE}': {e}", exc_info=True)
+            app.logger.error(f"APP: [{datetime.now()}] Erro ao carregar '{PROFESSOR_MAPPING_FILE}': {e}", exc_info=True)
             app.config['PROFESSOR_COURSE_MAPPING'] = {}
     else:
-        app.logger.warning(f"[{datetime.now()}] Arquivo de mapeamento de professor-curso não encontrado: {PROFESSOR_MAPPING_FILE}. Crie este arquivo para habilitar filtros por professor.")
+        app.logger.warning(f"APP: [{datetime.now()}] Arquivo de mapeamento de professor-curso não encontrado: {PROFESSOR_MAPPING_FILE}. Crie este arquivo para habilitar filtros por professor.")
         app.config['PROFESSOR_COURSE_MAPPING'] = {}
 
 # Carregar dados quando a aplicação for iniciada (executado uma vez na inicialização)
@@ -158,6 +160,7 @@ def health_check():
         "professor_course_mapping_loaded": bool(app.config['PROFESSOR_COURSE_MAPPING']),
         "timestamp": datetime.now().isoformat()
     }
+    app.logger.info(f"APP: [{datetime.now()}] Health Check: {status}")
     return jsonify(status)
 
 # REGISTRAR BLUEPRINT DE PROFESSOR (COM PREFIXO DE URL)

@@ -33,9 +33,7 @@
             <button>Detalhes</button>
         </div>
         <div class="card-resumo relatorio">
-            <h2>Relatório da Turma</h2>
-            <p>Gerar Relatório</p>
-            <button>Gerar</button>
+            <a class="card-resumo botao" asp-controller="Relatorio" asp-action="Index" asp-route-professorId="@(Model?.ProfessorNome)">Gerar Relatórios</a>
         </div>
     </section>
 

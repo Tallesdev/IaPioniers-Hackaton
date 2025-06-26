@@ -5,9 +5,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Net.Http;
 using System.Text.Json;
 using System.Linq; // Para Distinct()
+using Microsoft.Extensions.Configuration; // Para IConfiguration
+using System.Threading.Tasks; // Para Task
+using System; // Para Uri, Exception
+using System.Collections.Generic; // Para List<T>, HashSet<T>
+using Microsoft.AspNetCore.Authorization; // Para [Authorize]
 
 namespace IaPioniers.Controllers
 {
+    [Authorize] // Ensures that only authenticated users can access this controller
     public class RelatorioController : Controller
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -20,9 +26,16 @@ namespace IaPioniers.Controllers
         }
 
         // GET: Relatorio/Index
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string professorId)
         {
-            var cursosDisponiveis = await BuscarTodosCursosDaAPI();
+            if (string.IsNullOrEmpty(professorId))
+            {
+                ModelState.AddModelError("", "Nome do professor não fornecido. Não é possível carregar os cursos.");
+                return View(new RelatorioCursoViewModel());
+            }
+
+            var cursosDisponiveis = await BuscarCursosDoProfessorNaAPI(professorId);
+            Console.WriteLine($"[DEBUG C#] Cursos disponíveis após chamada à API para '{professorId}': {string.Join(", ", cursosDisponiveis)}");
 
             var viewModel = new RelatorioCursoViewModel
             {
@@ -32,6 +45,8 @@ namespace IaPioniers.Controllers
                     Text = c
                 }).ToList()
             };
+
+            ViewBag.ProfessorId = professorId;
 
             return View(viewModel);
         }
@@ -43,24 +58,24 @@ namespace IaPioniers.Controllers
             if (string.IsNullOrWhiteSpace(model.CursoSelecionado))
             {
                 ModelState.AddModelError("", "Selecione um curso.");
-                // Recarrega a lista de cursos para não ficar vazia após o erro
-                model.Cursos = (await BuscarTodosCursosDaAPI()).Select(c => new SelectListItem { Value = c, Text = c }).ToList();
+
+                string currentProfessorName = User.Identity.Name;
+                if (string.IsNullOrEmpty(currentProfessorName))
+                {
+                    currentProfessorName = "João Silva"; // Fallback for testing if user identity is not fully set up
+                }
+                model.Cursos = (await BuscarCursosDoProfessorNaAPI(currentProfessorName)).Select(c => new SelectListItem { Value = c, Text = c }).ToList();
                 return View("Index", model);
             }
 
             var alunosEmRisco = await ObterDadosIA(model.CursoSelecionado);
 
-            // Calcula a média de risco da turma aqui, APÓS obter os dados normalizados
-            // Apenas se houver alunos em risco, para evitar divisão por zero
             double mediaRiscoTurma = 0;
             if (alunosEmRisco != null && alunosEmRisco.Any())
             {
                 mediaRiscoTurma = alunosEmRisco.Average(a => a.RiskScore);
             }
-            // Multiplicamos por 100 para ter a porcentagem para exibição
-            // E passamos para o ViewModel para ser usado no gráfico da turma na View
             ViewBag.MediaRiscoTurmaPorcentagem = mediaRiscoTurma * 100;
-
 
             var viewModel = new RelatorioTurmaCompletoViewModel
             {
@@ -77,88 +92,74 @@ namespace IaPioniers.Controllers
             return View("RelatorioGerado", viewModel);
         }
 
-        // FUNÇÃO ATUALIZADA: BuscarTodosCursosDaAPI()
-        private async Task<List<string>> BuscarTodosCursosDaAPI()
+        // Method to fetch courses for a SPECIFIC professor (expects professor's FULL NAME)
+        private async Task<List<string>> BuscarCursosDoProfessorNaAPI(string professorName)
         {
             var client = _httpClientFactory.CreateClient();
             var baseUrl = _configuration["PythonApiBaseUrl"].TrimEnd('/') + "/";
-            var todosCursosUnicos = new HashSet<string>();
 
-            // ***** LISTA DE IDs DE PROFESSORES BASEADA NO JSON QUE VOCÊ FORNECEU *****
-            var professorIds = new List<string>
+            // CORRECTION HERE: Explicitly adds the "/api/" prefix
+            var url = $"{baseUrl}api/professor/dashboard-data?professor_id={Uri.EscapeDataString(professorName)}";
+
+            // Declare and initialize cursosDoProfessor here
+            var cursosDoProfessor = new HashSet<string>();
+
+            try
             {
-                "João Silva",
-                "Maria Oliveira",
-                "Pedro Souza",
-                "Ana Costa"
-            };
+                var response = await client.GetAsync(url);
 
-            if (!professorIds.Any())
-            {
-                Console.WriteLine("Nenhum ID de professor configurado para buscar cursos. A lista de cursos será vazia.");
-                return new List<string>();
-            }
-
-            foreach (var professorId in professorIds)
-            {
-                var url = $"{baseUrl}professor/dashboard-data?professor_id={Uri.EscapeDataString(professorId)}";
-
-                try
+                if (!response.IsSuccessStatusCode)
                 {
-                    var response = await client.GetAsync(url);
+                    Console.WriteLine($"Warning: Failed to fetch dashboard for professor {professorName} (Status: {response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
+                    return new List<string>();
+                }
 
-                    if (!response.IsSuccessStatusCode)
+                var json = await response.Content.ReadAsStringAsync();
+                using (JsonDocument doc = JsonDocument.Parse(json))
+                {
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("courseSummaries", out JsonElement courseSummariesElement) &&
+                        courseSummariesElement.ValueKind == JsonValueKind.Array)
                     {
-                        Console.WriteLine($"Aviso: Falha ao buscar dashboard para professor {professorId} (Status: {response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
-                        continue; // Tentar o próximo professor
-                    }
-
-                    var json = await response.Content.ReadAsStringAsync();
-                    using (JsonDocument doc = JsonDocument.Parse(json))
-                    {
-                        var root = doc.RootElement;
-
-                        if (root.TryGetProperty("courseSummaries", out JsonElement courseSummariesElement) &&
-                            courseSummariesElement.ValueKind == JsonValueKind.Array)
+                        foreach (var courseSummary in courseSummariesElement.EnumerateArray())
                         {
-                            foreach (var courseSummary in courseSummariesElement.EnumerateArray())
+                            if (courseSummary.TryGetProperty("CourseName", out JsonElement courseNameElement))
                             {
-                                if (courseSummary.TryGetProperty("CourseName", out JsonElement courseNameElement))
+                                var nome = courseNameElement.GetString();
+                                if (!string.IsNullOrEmpty(nome))
                                 {
-                                    var nome = courseNameElement.GetString();
-                                    if (!string.IsNullOrEmpty(nome))
-                                    {
-                                        todosCursosUnicos.Add(nome);
-                                    }
+                                    cursosDoProfessor.Add(nome);
                                 }
                             }
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Erro ao buscar cursos da API para professor {professorId}: {ex.Message}");
-                    // Continuar para o próximo professor, se houver
-                }
             }
-            Console.WriteLine($"Total de cursos únicos encontrados: {todosCursosUnicos.Count}");
-            return todosCursosUnicos.ToList();
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching courses from API for professor {professorName}: {ex.Message}");
+                return new List<string>();
+            }
+            Console.WriteLine($"Total courses found for professor {professorName}: {cursosDoProfessor.Count}");
+            return cursosDoProfessor.ToList();
         }
 
-        // FUNÇÃO ObterDadosIA: CORRIGIDA PARA NORMALIZAR O RiskScore
+        // ObterDadosIA FUNCTION: CORRECTION TO ADD /api/
         private async Task<List<IAAlunoEvasao>> ObterDadosIA(string courseName)
         {
             var client = _httpClientFactory.CreateClient();
 
             var baseUrl = _configuration["PythonApiBaseUrl"].TrimEnd('/') + "/";
-            var url = $"{baseUrl}evasion-report/evasion-report/at-risk-students?course_name={Uri.EscapeDataString(courseName)}";
+            // CORRECTION HERE: Explicitly adds the "/api/" prefix
+            var url = $"{baseUrl}api/evasion-report/evasion-report/at-risk-students?course_name={Uri.EscapeDataString(courseName)}";
 
             try
             {
                 var response = await client.GetAsync(url);
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"Erro na API Python ao obter dados de evasão (Status: {response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
+                    Console.WriteLine($"Error in Python API when getting evasion data (Status: {response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
                     return new List<IAAlunoEvasao>();
                 }
 
@@ -174,20 +175,14 @@ namespace IaPioniers.Controllers
                         foreach (var aluno in atRiskStudentsElement.EnumerateArray())
                         {
                             double rawRiskScore = aluno.GetProperty("riskScore").GetDouble();
-
-                            // ***** LINHA DE CORREÇÃO PRINCIPAL *****
-                            // Assumimos que o 1500 significa 15% e 2000 significa 20%,
-                            // então precisamos dividir por 10000 para obter 0.15 e 0.20
                             double normalizedRiskScore = rawRiskScore / 100.0;
-
-                            // Garantir que o score esteja entre 0 e 1, caso a API envie algo maluco
                             normalizedRiskScore = Math.Max(0, Math.Min(1, normalizedRiskScore));
 
                             alunos.Add(new IAAlunoEvasao
                             {
                                 StudentName = aluno.GetProperty("studentName").GetString(),
                                 CourseName = aluno.GetProperty("courseName").GetString(),
-                                RiskScore = normalizedRiskScore, // Usar o valor normalizado
+                                RiskScore = normalizedRiskScore,
                                 EvasionReasons = aluno.GetProperty("evasionReasons").EnumerateArray()
                                     .Select(e => e.GetString()).ToList()
                             });
@@ -198,7 +193,7 @@ namespace IaPioniers.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Erro ao consultar IA: " + ex.Message);
+                Console.WriteLine("Error querying IA: " + ex.Message);
                 return new List<IAAlunoEvasao>();
             }
         }
