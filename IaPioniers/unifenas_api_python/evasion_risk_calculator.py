@@ -28,7 +28,7 @@ INACTIVITY_THRESHOLD_GLOBAL_DAYS = 30
 INACTIVITY_THRESHOLD_COURSE_DAYS = 14
 
 # Definindo um threshold de risco padrão para 'is_at_risk'
-DEFAULT_RISK_THRESHOLD = 5 # <--- Esta linha é a que me interessa!
+DEFAULT_RISK_THRESHOLD = 10 # <--- Esta linha é a que me interessa!
 
 # --- FUNÇÕES DE CÁLCULO DE RISCO ---
 
