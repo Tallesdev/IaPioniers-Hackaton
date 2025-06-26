@@ -38,7 +38,7 @@
                     <span class="card-title">@firstCourse.CourseName</span>
                     <p class="card-details">@firstCourse.StudentsInCourse alunos</p>
                 </div>
-                <button class="card-button secondary">Ver turmas</button>
+                <a asp-controller="Turmas" asp-action="Index" class="card-button secondary">Ver turmas</a>
             </div>
         }
         else
@@ -49,7 +49,7 @@
                     <span class="card-title">Nenhuma Turma</span>
                     <p class="card-details">Nenhum aluno</p>
                 </div>
-                <button class="card-button secondary">Ver turmas</button>
+                <a asp-controller="Turmas" asp-action="Index" class="card-button secondary">Ver turmas</a>
             </div>
         }
 
@@ -60,7 +60,8 @@
                 <span class="card-number">@Model.TotalStudents</span>
                 <p class="card-title">Resumo das Turmas</p>
             </div>
-            <button class="card-button primary">Gerar Relatório</button>
+            <a asp-controller="Relatorio" asp-action="Index" class="card-button primary">Gerar Relatório</a>
+
         </div>
     </section>
 

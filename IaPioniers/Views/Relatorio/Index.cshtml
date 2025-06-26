@@ -1,0 +1,78 @@
+﻿@model IaPioniers.Models.ViewModels.RelatorioCursoViewModel
+
+@{
+    ViewData["Title"] = "Selecionar Curso";
+    Layout = "_Layout";
+}
+
+<div class="relatorio-container">
+    <h2>Selecionar Curso para Relatório</h2>
+
+    <form asp-action="Gerar" method="post" class="relatorio-form">
+        <label asp-for="CursoSelecionado">Curso:</label>
+        <select asp-for="CursoSelecionado" asp-items="Model.Cursos" class="dropdown">
+            <option value="">-- Selecione um curso --</option>
+        </select>
+        <span asp-validation-for="CursoSelecionado" class="text-danger"></span>
+
+        <button type="submit" class="btn-relatorio">Gerar Relatório</button>
+    </form>
+</div>
+
+@section Styles {
+    <style>
+        .relatorio-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 40px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .relatorio-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dropdown {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .btn-relatorio {
+            background-color: #3498db;
+            color: #fff;
+            padding: 12px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+            .btn-relatorio:hover {
+                background-color: #2980b9;
+            }
+
+        .text-danger {
+            font-size: 0.9rem;
+            color: #e74c3c;
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
