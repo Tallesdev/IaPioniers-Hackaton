@@ -15,7 +15,13 @@
         <a href="/Configurations/Index" class="nav-item @(currentController == "Settings" ? "active" : "")"><i class="fas fa-cog"></i> Configurações</a>
     </nav>
     <div class="sidebar-footer">
-        <a href="/" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</a>
+
+        <form asp-controller="Account" asp-action="Logout" method="post">
+            <button type="submit" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </form>
+
     </div>
 </aside>
 

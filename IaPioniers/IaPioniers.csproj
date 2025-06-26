@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\ViewModels\Usuario.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="unifenas_api_python\cache\" />
     <Folder Include="unifenas_api_python\local_data\" />
     <Folder Include="wwwroot\images\" />
