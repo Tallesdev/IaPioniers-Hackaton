@@ -8,6 +8,10 @@ import numpy as np # Importar numpy para tratar NaNs (pd.notna)
 
 professor_bp = Blueprint('professor', __name__, url_prefix='/api/professor')
 
+# Defina o score máximo possível das regras para normalização
+# SOMA DOS POINTS_ de evasion_risk_calculator.py
+MAX_POSSIBLE_RULE_SCORE = 100 
+
 @professor_bp.route('/dashboard-data', methods=['GET'])
 def get_professor_dashboard_data():
     try:
@@ -29,19 +33,31 @@ def get_professor_dashboard_data():
             current_app.logger.error(f"[{datetime.now()}] Caches de dados ou mapeamento estão vazios/inválidos no app.config. Verifique o carregamento inicial em app.py.")
             return jsonify({"error": "Dados internos não disponíveis para processamento. Tente carregar novamente os caches."}), 500
 
+        current_app.logger.debug(f"[{datetime.now()}] Conteúdo completo de PROFESSOR_COURSE_MAPPING no config: {professor_course_mapping}")
+        current_app.logger.debug(f"[{datetime.now()}] Tentando obter cursos para o professor: '{professor_id}'.")
+
         professor_courses = professor_course_mapping.get(professor_id)
+        
+        current_app.logger.info(f"[{datetime.now()}] Cursos BRUTOS obtidos para '{professor_id}' do mapeamento: {professor_courses}")
+
+
         if not professor_courses:
             current_app.logger.warning(f"[{datetime.now()}] Professor '{professor_id}' não encontrado no mapeamento ou sem cursos associados.")
             return jsonify({
                 "professorNome": professor_id,
                 "totalStudents": 0,
                 "studentsAtRisk": 0,
+                "totalActivities": 0,
                 "currentModuleInfo": {},
                 "courseSummaries": [],
                 "recentActivities": [],
                 "evasionRiskCount": 0,
                 "studentEvasionList": []
             })
+
+        # --- NORMALIZAÇÃO DE CASE ---
+        professor_courses_normalized = [c.upper() for c in professor_courses]
+        current_app.logger.info(f"[{datetime.now()}] Cursos NORMALIZADOS para '{professor_id}': {professor_courses_normalized}")
 
         # --- Determinação do Módulo Atual ---
         current_date = datetime.now()
@@ -80,7 +96,7 @@ def get_professor_dashboard_data():
 
         current_module_info_start_date = current_module_info["start_date"]
         current_module_info_end_date = current_module_info["end_date"]
-        current_app.logger.info(f"[{datetime.now()}] Datas de filtro: Início={current_module_info_start_date}, Fim={current_module_info_end_date}")
+        current_app.logger.info(f"[{datetime.now()}] Datas de filtro do módulo ativo: Início={current_module_info_start_date}, Fim={current_module_info_end_date}")
 
         if not pd.api.types.is_datetime64_any_dtype(df_raw_logs_cache['time_dt']):
              current_app.logger.error(f"[{datetime.now()}] 'time_dt' em df_raw_logs_cache não é datetime. Isso indica um problema no carregamento em app.py.")
@@ -96,18 +112,31 @@ def get_professor_dashboard_data():
             current_app.logger.error(f"[{datetime.now()}] Coluna 'course_fullname' ausente nos logs filtrados.")
             return jsonify({"error": "Erro interno: Coluna de curso ausente."}), 500
 
+        if 'course_fullname_normalized' not in filtered_logs_by_module.columns:
+            filtered_logs_by_module['course_fullname_normalized'] = filtered_logs_by_module['course_fullname'].astype(str).str.upper()
+
         filtered_logs_for_professor = filtered_logs_by_module[
-            filtered_logs_by_module['course_fullname'].isin(professor_courses)
+            filtered_logs_by_module['course_fullname_normalized'].isin(professor_courses_normalized)
         ].copy() 
-        current_app.logger.info(f"[{datetime.now()}] Logs APÓS FILTRO DE CURSO DO PROFESSOR: {len(filtered_logs_for_professor)} linhas. (Cursos: {professor_courses})")
+        current_app.logger.info(f"[{datetime.now()}] Logs APÓS FILTRO DE CURSO DO PROFESSOR: {len(filtered_logs_for_professor)} linhas. (Cursos: {professor_courses_normalized})")
 
         total_students = filtered_logs_for_professor['user_id'].nunique()
         
-        students_at_risk_df = df_risk_scores_cache[
-            df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique()) &
-            df_risk_scores_cache['is_at_risk'] == 1
-        ]
+        # Filtrar os scores de risco para os cursos do professor
+        professor_risk_scores = df_risk_scores_cache[
+            df_risk_scores_cache['course_fullname'].str.upper().isin(professor_courses_normalized) # Usar normalized_professor_courses para consistência
+        ].copy() # Adicionado .copy() para evitar SettingWithCopyWarning
+        current_app.logger.debug(f"[{datetime.now()}] professor_risk_scores (primeiras 5 linhas):\n{professor_risk_scores.head().to_string()}")
+        current_app.logger.debug(f"[{datetime.now()}] Contagem de is_at_risk em professor_risk_scores:\n{professor_risk_scores['is_at_risk'].value_counts().to_string()}")
+
+
+        students_at_risk_df = professor_risk_scores[
+            professor_risk_scores['user_id'].isin(filtered_logs_for_professor['user_id'].unique()) &
+            professor_risk_scores['is_at_risk'] == 1
+        ].copy() # Adicionado .copy()
         students_at_risk = students_at_risk_df['user_id'].nunique()
+        current_app.logger.debug(f"[{datetime.now()}] students_at_risk_df (primeiras 5 linhas):\n{students_at_risk_df.head().to_string()}")
+        current_app.logger.debug(f"[{datetime.now()}] students_at_risk_df está vazio? {students_at_risk_df.empty}")
         current_app.logger.debug(f"[{datetime.now()}] Total de alunos para {professor_id}: {total_students}, Alunos em risco: {students_at_risk}")
 
         total_activities = len(filtered_logs_for_professor)
@@ -120,16 +149,16 @@ def get_professor_dashboard_data():
             valid_feature_users = df_features_cache['user_id'].unique() if not df_features_cache.empty else []
 
             df_risk_scores_professor_courses = df_risk_scores_cache[
-                (df_risk_scores_cache['course_fullname'].isin(professor_courses)) &
+                (df_risk_scores_cache['course_fullname'].isin(professor_courses)) & 
                 (df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique())) &
                 (df_risk_scores_cache['user_id'].isin(valid_risk_users)) 
             ].copy()
             
             students_at_risk_in_course = df_risk_scores_professor_courses[df_risk_scores_professor_courses['is_at_risk'] == 1] \
-                                            .groupby('course_fullname')['user_id'].nunique().reset_index(name='StudentsAtRiskInCourse')
+                                                .groupby('course_fullname')['user_id'].nunique().reset_index(name='StudentsAtRiskInCourse')
             
             df_features_professor_courses = df_features_cache[
-                (df_features_cache['course_fullname'].isin(professor_courses)) &
+                (df_features_cache['course_fullname'].isin(professor_courses)) & 
                 (df_features_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique())) &
                 (df_features_cache['user_id'].isin(valid_feature_users)) 
             ].copy()
@@ -159,7 +188,7 @@ def get_professor_dashboard_data():
         recent_activities_data = [] 
         user_ids_in_module = filtered_logs_for_professor['user_id'].unique() if not filtered_logs_for_professor.empty else []
 
-        if not df_raw_logs_cache.empty and user_ids_in_module.size > 0: 
+        if not df_raw_logs_cache.empty and len(user_ids_in_module) > 0: 
             recent_logs_for_display = df_raw_logs_cache[
                 df_raw_logs_cache['user_id'].isin(user_ids_in_module) &
                 (df_raw_logs_cache['time_dt'] >= current_module_info_start_date) &
@@ -174,8 +203,6 @@ def get_professor_dashboard_data():
                     event_info = str(log.get('eventname', 'Evento Desconhecida')).capitalize()
                     target_info = str(log.get('target', '')).capitalize()
                     object_info = str(log.get('object', '')).capitalize()
-                    # Mudei a forma de obter user_name_info para ser mais robusta
-                    # Tenta obter de df_raw_logs_cache ou df_features_cache ou fallback
                     user_name_info = "Desconhecido"
                     if 'user_name' in log and pd.notna(log['user_name']):
                         user_name_info = str(log['user_name'])
@@ -183,7 +210,7 @@ def get_professor_dashboard_data():
                         feature_user_name = df_features_cache[df_features_cache['user_id'] == log['user_id']]['user_name'].iloc[0] if not df_features_cache[df_features_cache['user_id'] == log['user_id']].empty else None
                         if pd.notna(feature_user_name):
                             user_name_info = str(feature_user_name)
-                    if user_name_info == "Desconhecido": # Fallback final
+                    if user_name_info == "Desconhecido":
                          user_name_info = f"Aluno {log.get('user_id', 'Desconhecido')}"
                     
                     raw_status = log.get('status', None)
@@ -222,92 +249,110 @@ def get_professor_dashboard_data():
 
         # --- Construindo a StudentEvasionList ---
         student_evasion_list = []
-        if not df_risk_scores_professor_courses.empty:
-            # Seleciona apenas os user_ids dos alunos em risco para o merge com df_features_cache
+        if not students_at_risk_df.empty: # Usar students_at_risk_df que já está filtrado para o professor e is_at_risk=1
             risk_user_ids = students_at_risk_df['user_id'].unique()
 
-            # Filtra df_features_cache para incluir apenas os alunos em risco
+            # Filtrar features apenas para os alunos em risco que pertencem aos cursos do professor
+            # E que estão no módulo atual (se aplicável, embora o df_risk_scores_cache já seja global)
             filtered_features_for_risk_students = df_features_cache[
-                df_features_cache['user_id'].isin(risk_user_ids)
-            ].copy() # Cópia para evitar SettingWithCopyWarning
+                df_features_cache['user_id'].isin(risk_user_ids) &
+                df_features_cache['course_fullname'].str.upper().isin(professor_courses_normalized)
+            ].copy()
 
-            # Mesclar df_risk_scores_professor_courses com as features filtradas
-            # para obter 'user_name', 'total_actions_global' e 'overall_last_access_days_ago'
-            current_app.logger.debug(f"[{datetime.now()}] Colunas de df_risk_scores_professor_courses antes do merge: {df_risk_scores_professor_courses.columns.tolist()}")
-            current_app.logger.debug(f"[{datetime.now()}] Colunas de filtered_features_for_risk_students antes do merge: {filtered_features_for_risk_students.columns.tolist()}")
+            current_app.logger.debug(f"[{datetime.now()}] Colunas de students_at_risk_df antes do merge para lista de evasão: {students_at_risk_df.columns.tolist()}")
+            current_app.logger.debug(f"[{datetime.now()}] Colunas de filtered_features_for_risk_students antes do merge para lista de evasão: {filtered_features_for_risk_students.columns.tolist()}")
 
-            # Garante que as colunas 'user_id' e 'course_fullname' estão presentes em ambos antes do merge
-            required_cols_risk = ['user_id', 'course_fullname', 'evasion_probability_ml', 'evasion_reasons']
-            required_cols_features = ['user_id', 'course_fullname', 'user_name', 'total_actions_global', 'overall_last_access_days_ago']
+            # As colunas necessárias para o merge e para a saída final
+            required_cols_risk = ['user_id', 'course_fullname', 'overall_evasion_score', 'evasion_reasons']
+            required_cols_features = ['user_id', 'course_fullname', 'user_name', 'total_actions_global', 'overall_last_access_days_ago', 'days_since_last_valuable_submission_course'] # Adicionei days_since_last_valuable_submission_course para o email
 
-            if not all(col in df_risk_scores_professor_courses.columns for col in required_cols_risk):
-                 current_app.logger.error(f"[{datetime.now()}] df_risk_scores_professor_courses não tem todas as colunas esperadas para o merge de evasão: {required_cols_risk}")
-                 # Pode retornar um erro ou lidar de forma mais graciosa
-                 pass
-            if not all(col in filtered_features_for_risk_students.columns for col in required_cols_features):
-                 current_app.logger.error(f"[{datetime.now()}] filtered_features_for_risk_students não tem todas as colunas esperadas para o merge de evasão: {required_cols_features}")
-                 # Pode retornar um erro ou lidar de forma mais graciosa
-                 pass
-
+            # Verificar se as colunas existem antes de tentar acessá-las
+            for col in required_cols_risk:
+                if col not in students_at_risk_df.columns:
+                    current_app.logger.warning(f"[{datetime.now()}] Coluna '{col}' ausente em students_at_risk_df. Isso pode afetar a lista de evasão.")
+            for col in required_cols_features:
+                if col not in filtered_features_for_risk_students.columns:
+                    current_app.logger.warning(f"[{datetime.now()}] Coluna '{col}' ausente em filtered_features_for_risk_students. Isso pode afetar a lista de evasão.")
 
             merged_student_data = pd.merge(
-                df_risk_scores_professor_courses, 
-                filtered_features_for_risk_students, # Usar o DataFrame de features já filtrado
-                on=['user_id', 'course_fullname'], 
-                how='left'
+                students_at_risk_df, # Usar o df_students_at_risk_df que já está filtrado e tem is_at_risk=1
+                filtered_features_for_risk_students, 
+                on=['user_id', 'course_fullname'], # Merge por user_id e course_fullname
+                how='left',
+                suffixes=('_risk', '_features') # Adiciona sufixos para colunas com o mesmo nome
             )
             current_app.logger.debug(f"[{datetime.now()}] Colunas de merged_student_data após o merge para lista de evasão: {merged_student_data.columns.tolist()}")
+            current_app.logger.debug(f"[{datetime.now()}] merged_student_data (primeiras 5 linhas):\n{merged_student_data.head().to_string()}")
+            current_app.logger.debug(f"[{datetime.now()}] Contagem de linhas em merged_student_data: {len(merged_student_data)}")
 
-            # Filtrar apenas alunos em risco para a lista de evasão FINAL
-            students_at_risk_detailed = merged_student_data[merged_student_data['is_at_risk'] == 1].copy()
 
-            # Preencher NaNs em colunas numéricas que podem vir do merge
+            # O students_at_risk_detailed agora é o próprio merged_student_data, pois já filtramos antes
+            students_at_risk_detailed = merged_student_data.copy()
+
             students_at_risk_detailed['total_actions_global'] = students_at_risk_detailed['total_actions_global'].fillna(0).astype(int)
             students_at_risk_detailed['overall_last_access_days_ago'] = students_at_risk_detailed['overall_last_access_days_ago'].fillna(0).astype(int)
-            students_at_risk_detailed['risk_score_ml'] = students_at_risk_detailed['evasion_probability_ml'].fillna(0).astype(float) * 100 # Garante float e * 100
-            
+            students_at_risk_detailed['days_since_last_valuable_submission_course'] = students_at_risk_detailed['days_since_last_valuable_submission_course'].fillna(-1).astype(int) # Preencher -1 para N/A
+
+            # NOVO CÁLCULO DO RISK SCORE: NORMALIZADO PELAS REGRAS (0-100%)
+            students_at_risk_detailed['riskScoreDisplay'] = students_at_risk_detailed['overall_evasion_score'].apply(
+                lambda x: min(100, int(round((x / MAX_POSSIBLE_RULE_SCORE) * 100))) if MAX_POSSIBLE_RULE_SCORE > 0 else 0
+            )
+            current_app.logger.debug(f"[{datetime.now()}] students_at_risk_detailed (primeiras 5 linhas com riskScoreDisplay):\n{students_at_risk_detailed[['user_name_features', 'course_fullname', 'overall_evasion_score', 'riskScoreDisplay']].head().to_string()}")
+
+
             def parse_evasion_reasons(reasons):
                 if pd.isna(reasons) or reasons is None:
                     return []
-                if isinstance(reasons, list): # Se já é uma lista, retorna
+                if isinstance(reasons, list):
                     return reasons
                 if isinstance(reasons, str):
                     try:
-                        # Tenta tratar como JSON (lista de strings)
+                        # Tenta carregar como JSON, mas também lida com strings simples
                         parsed = json.loads(reasons.replace("'", "\"")) 
                         if isinstance(parsed, list):
-                            return [str(item) for item in parsed] # Garante que os itens são strings
+                            return [str(item) for item in parsed]
                     except (json.JSONDecodeError, ValueError):
-                        pass # Falha ao decodificar, trata como string simples abaixo
+                        pass
                 return [str(reasons)] if str(reasons) else []
 
-            students_at_risk_detailed['evasion_reasons'] = students_at_risk_detailed['evasion_reasons'].apply(parse_evasion_reasons)
-            
-            # Adiciona user_name diretamente aqui de forma mais robusta
+            # Usar a coluna 'evasion_reasons_risk' se ela existir após o merge
+            evasion_reasons_col = 'evasion_reasons_risk' if 'evasion_reasons_risk' in students_at_risk_detailed.columns else 'evasion_reasons'
+            students_at_risk_detailed[evasion_reasons_col] = students_at_risk_detailed[evasion_reasons_col].apply(parse_evasion_reasons)
+
             for _, row in students_at_risk_detailed.iterrows():
-                # Tenta obter o nome do usuário do DataFrame, ou usa um fallback
                 student_name = "Desconhecido"
-                if 'user_name' in row and pd.notna(row['user_name']) and str(row['user_name']).lower() != 'nan':
+                # Prioriza user_name da tabela de features, se disponível e não NaN
+                if 'user_name_features' in row and pd.notna(row['user_name_features']):
+                    student_name = str(row['user_name_features'])
+                elif 'user_name_risk' in row and pd.notna(row['user_name_risk']): # Fallback para user_name do df_risk_scores
+                    student_name = str(row['user_name_risk'])
+                elif 'user_name' in row and pd.notna(row['user_name']): # Fallback para user_name original
                     student_name = str(row['user_name'])
                 else:
-                    # Se user_name ainda estiver faltando após o merge, tenta buscar do df_raw_logs_cache
-                    raw_log_user_name = df_raw_logs_cache[df_raw_logs_cache['user_id'] == row['user_id']]['user_name'].iloc[0] if not df_raw_logs_cache[df_raw_logs_cache['user_id'] == row['user_id']].empty else None
+                    # Tenta buscar do df_raw_logs_cache se não encontrado nas features/risk_scores
+                    raw_log_user_name = df_raw_logs_cache[df_raw_logs_cache['user_id'] == row['user_id_risk']]['user_name'].iloc[0] if not df_raw_logs_cache[df_raw_logs_cache['user_id'] == row['user_id_risk']].empty else None
                     if pd.notna(raw_log_user_name) and str(raw_log_user_name).lower() != 'nan':
                         student_name = str(raw_log_user_name)
                     else:
-                        student_name = f"Aluno {row['user_id']}" # Fallback final
+                        student_name = f"Aluno {row['user_id_risk']}" # Use user_id_risk para garantir que é o ID do aluno em risco
+
+                reasons_for_student = row[evasion_reasons_col]
+                if not reasons_for_student:
+                    reasons_for_student = ["Nenhuma razão de regra detectada."]
+
 
                 student_evasion_list.append({
-                    "studentId": str(row['user_id']),
+                    "studentId": str(row['user_id_risk']), # Use user_id_risk para garantir que é o ID do aluno em risco
                     "studentName": student_name,
                     "courseName": str(row['course_fullname']),
-                    "riskScore": int(round(row['evasion_probability_ml'] * 100)), # Usar evasion_probability_ml para o risco
-                    "totalAccesses": int(row['total_actions_global']),
-                    "daysWithoutAccess": int(row['overall_last_access_days_ago']),
-                    "evasionReasons": row['evasion_reasons']
+                    "totalAccesses": int(row.get('total_actions_global', 0)),
+                    "daysWithoutAccess": int(row.get('overall_last_access_days_ago', -1)),
+                    "riskScore": int(row['riskScoreDisplay']), # AGORA VEM DO SCORE DE REGRAS NORMALIZADO
+                    "evasionReasons": reasons_for_student
                 })
+        current_app.logger.debug(f"[{datetime.now()}] student_evasion_list final gerada para {len(student_evasion_list)} alunos em risco.")
         
-        evasion_risk_count = students_at_risk
+        evasion_risk_count = students_at_risk # Continua a ser a contagem de alunos com is_at_risk=1
 
         response_data = {
             "professorNome": professor_id,
@@ -332,3 +377,4 @@ def get_professor_dashboard_data():
     except Exception as e:
         current_app.logger.error(f"[{datetime.now()}] Erro inesperado na função get_professor_dashboard_data: {e}", exc_info=True)
         return jsonify({"error": "Erro interno do servidor Flask", "details": str(e)}), 500
+

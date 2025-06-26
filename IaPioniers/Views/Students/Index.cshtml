@@ -1,0 +1,367 @@
+﻿@model IaPioniers.Models.ViewModels.StudentOverviewPageViewModel
+
+@{
+    ViewData["Title"] = "Alunos";
+    Layout = "_Layout"; // Usar o layout principal da aplicação
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/students-overview.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+}
+
+<div class="main-content">
+    <header class="top-header">
+        <h1>Alunos</h1>
+        <div class="user-profile">
+            <span class="user-name">Prof. @Model.ProfessorNome</span>
+            <img src="https://placehold.co/40x40/7B3E90/FFFFFF?text=P" alt="Foto do Professor" class="user-avatar" onerror="this.onerror=null;this.src='https://placehold.co/40x40/7B3E90/FFFFFF?text=P';">
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="error-message">
+            <p><strong>Erro:</strong> @ViewBag.ErrorMessage</p>
+        </div>
+    }
+
+    <section class="controls-section">
+        <div class="filter-group">
+            <label for="courseSelect">Turma:</label>
+            <select id="courseSelect" class="styled-select">
+                <option value="">Todas as Turmas</option>
+                @if (Model.AvailableCourses != null && Model.AvailableCourses.Any())
+                {
+                    @foreach (var course in Model.AvailableCourses.OrderBy(c => c))
+                    {
+                        <option value="@course" selected="@(Model.SelectedCourseName == course ? "selected" : null)">@course</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="search-group">
+            <input type="text" id="searchInput" placeholder="Pesquisar Aluno" class="styled-input" />
+            <button id="searchButton" class="search-button"><i class="fas fa-search"></i></button>
+        </div>
+    </section>
+
+    <section class="students-list-section">
+        <h3>Lista de Alunos</h3>
+        @if (Model.Students != null && Model.Students.Any())
+        {
+            <div class="table-responsive">
+                <table id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>Nome do Aluno</th>
+                            <th>Turma</th>
+                            <th>Status</th>
+                            <th>Entrega Recente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model.Students)
+                        {
+                            <tr data-student-name="@student.StudentName.ToLower()" data-course-name="@student.CourseName.ToLower()">
+                                <td>@student.StudentName</td>
+                                <td>@student.CourseName</td>
+                                <td>
+                                    @{
+                                        string statusClass = "";
+                                        string iconClass = "";
+                                        switch (student.Status)
+                                        {
+                                            case "Participando":
+                                                statusClass = "status-participating";
+                                                iconClass = "fa-circle-check";
+                                                break;
+                                            case "Atrasado":
+                                                statusClass = "status-delayed";
+                                                iconClass = "fa-triangle-exclamation";
+                                                break;
+                                            case "Inativo":
+                                                statusClass = "status-inactive";
+                                                iconClass = "fa-circle-xmark";
+                                                break;
+                                            default:
+                                                statusClass = "status-default";
+                                                iconClass = "fa-circle-info";
+                                                break;
+                                        }
+                                    }
+                                    <span class="status-indicator @statusClass">
+                                        <i class="fas @iconClass"></i> @student.Status
+                                        @if (student.StatusDetails != null && student.StatusDetails.Any())
+                                        {
+                                            <span class="status-tooltip" title="@string.Join("&#10;", student.StatusDetails)">?</span>
+                                        }
+                                    </span>
+                                </td>
+                                <td>@student.RecentSubmission</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="no-data">Nenhum aluno encontrado para os critérios selecionados.</p>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const courseSelect = document.getElementById('courseSelect');
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            // Obtém o nome do professor do Model, que agora vem do usuário autenticado
+            // Esta variável 'professorNome' é crucial para as requisições de filtro.
+            const professorNome = "@Model.ProfessorNome";
+
+            // Função para recarregar a página com os filtros aplicados
+            function applyFilters() {
+                const selectedCourse = courseSelect.value;
+
+                // Constrói a URL usando o professorNome correto e o curso selecionado
+                // O professorId é passado como parâmetro de query string para o StudentsController
+                let url = `/Students?professorId=${encodeURIComponent(professorNome)}`;
+                if (selectedCourse) {
+                    url += `&courseName=${encodeURIComponent(selectedCourse)}`;
+                }
+
+                window.location.href = url; // Redireciona para a URL com os filtros
+            }
+
+            // Event listener para o dropdown de cursos (recarrega a página)
+            if (courseSelect) {
+                courseSelect.addEventListener('change', function() {
+                    applyFilters();
+                });
+            }
+
+            // Event listener para a barra de pesquisa (filtra na tabela HTML)
+            if (searchButton) {
+                searchButton.addEventListener('click', filterStudentsTable);
+                searchInput.addEventListener('keyup', function(event) {
+                    if (event.key === 'Enter') {
+                        filterStudentsTable();
+                    }
+                });
+            }
+
+            // Função para filtrar a tabela de alunos localmente (pela pesquisa de nome)
+            function filterStudentsTable() {
+                const filter = searchInput.value.toLowerCase();
+                const table = document.getElementById('studentsTable');
+                if (!table) return;
+
+                const rows = table.querySelectorAll('tbody tr');
+
+                rows.forEach(row => {
+                    const studentName = row.getAttribute('data-student-name');
+                    // A filtragem por nome do aluno é feita no cliente
+                    if (studentName && studentName.includes(filter)) {
+                        row.style.display = ''; // Mostra a linha
+                    } else {
+                        row.style.display = 'none'; // Esconde a linha
+                    }
+                });
+            }
+
+            // Re-aplica o filtro de pesquisa ao carregar a página se já houver um termo
+            if (searchInput.value) {
+                filterStudentsTable();
+            }
+
+            // Define o curso selecionado no dropdown com base na query string
+            // Isso garante que o dropdown mantenha o valor selecionado após o redirecionamento
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialCourseName = urlParams.get('courseName');
+            if (initialCourseName) {
+                courseSelect.value = initialCourseName;
+            }
+        });
+    </script>
+}
+<style>
+    /* Estilos base do dashboard.css para .main-content, .top-header, etc., são assumidos */
+
+    .controls-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        background-color: #333; /* Darker background for control section */
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .filter-group, .search-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .styled-select, .styled-input {
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #555;
+        background-color: #444;
+        color: #eee;
+        font-size: 1em;
+    }
+
+        .styled-select:focus, .styled-input:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+    .search-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+        .search-button:hover {
+            background-color: #0056b3;
+        }
+
+    /* Tabela de Alunos */
+    .students-list-section h3 {
+        color: #eee;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #555;
+        padding-bottom: 10px;
+    }
+
+    #studentsTable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background-color: #2a2a2a; /* Slightly lighter than main-content for contrast */
+        border-radius: 8px;
+        overflow: hidden; /* Para garantir bordas arredondadas */
+    }
+
+        #studentsTable thead tr {
+            background-color: #444;
+            color: #eee;
+            text-align: left;
+        }
+
+        #studentsTable th, #studentsTable td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #3a3a3a;
+            font-size: 0.95em;
+        }
+
+        #studentsTable tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+            #studentsTable tbody tr:hover {
+                background-color: #3a3a3a;
+            }
+
+            #studentsTable tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: bold;
+        color: white; /* Cor do texto padrão */
+    }
+
+        .status-indicator i {
+            margin-right: 7px;
+        }
+
+    .status-participating {
+        background-color: #28a745; /* Verde */
+    }
+
+    .status-delayed {
+        background-color: #ffc107; /* Amarelo/Laranja */
+        color: #333; /* Texto escuro para contraste */
+    }
+
+    .status-inactive {
+        background-color: #dc3545; /* Vermelho */
+    }
+
+    .status-default {
+        background-color: #6c757d; /* Cinza */
+    }
+
+    .status-tooltip {
+        position: relative;
+        display: inline-block;
+        margin-left: 5px;
+        cursor: help;
+        font-size: 0.7em;
+        background-color: #555;
+        color: #fff;
+        border-radius: 50%;
+        width: 15px;
+        height: 15px;
+        text-align: center;
+        line-height: 15px;
+        font-weight: normal;
+    }
+
+        .status-tooltip[title]:hover:after {
+            content: attr(title);
+            position: absolute;
+            bottom: 120%; /* Posição acima */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px;
+            border-radius: 5px;
+            white-space: pre-wrap; /* Permite quebras de linha no tooltip */
+            z-index: 10;
+            min-width: 200px; /* Largura mínima para o tooltip */
+            text-align: left;
+        }
+
+    .no-data {
+        color: #aaa;
+        text-align: center;
+        padding: 20px;
+        font-style: italic;
+    }
+
+    /* Responsividade básica */
+    @@media (max-width: 768px) {
+        .controls-section {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 15px;
+        }
+
+        .search-group {
+            width: 100%;
+        }
+
+        .styled-input {
+            flex-grow: 1; /* Faz a barra de pesquisa ocupar o espaço disponível */
+        }
+    }
+</style>

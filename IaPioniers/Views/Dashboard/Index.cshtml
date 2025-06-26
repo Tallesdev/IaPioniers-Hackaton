@@ -17,6 +17,13 @@
         </div>
     </header>
 
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="error-message">
+            <p><strong>Erro:</strong> @ViewBag.ErrorMessage</p>
+        </div>
+    }
+
     <section class="cards">
         @* CARD 1: Atividades *@
         <div class="card card-activities">

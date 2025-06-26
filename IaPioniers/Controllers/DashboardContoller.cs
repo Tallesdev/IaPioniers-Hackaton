@@ -1,138 +1,97 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
+using Microsoft.AspNetCore.Identity; // Para UserManager
+using IaPioniers.Models; // Para ApplicationUser, ErrorViewModel
+using IaPioniers.Models.ViewModels; // Para DashboardViewModel
+using IaPioniers.Services; // Para IProfessorDashboardService
+using Microsoft.Extensions.Logging; // Para ILogger
 using System;
-using System.Net.Http;
+using System.Net.Http; // Para HttpRequestException
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Identity; // Necessário para UserManager
-using IaPioniers.Models.Models_DB;
-using IaPioniers.Models.ViewModels;
-using IaPioniers.Data;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using IaPioniers.Models;
+using System.Diagnostics; // Para Activity.Current?.Id ou HttpContext.TraceIdentifier
+using Newtonsoft.Json; // <--- ESTA LINHA É CRÍTICA PARA JsonSerializationException
 
-namespace IaPioniers.Controllers
+namespace IaPioniers.Controllers // Certifique-se de que o namespace está correto
 {
-    // Adicione o atributo [Authorize] para garantir que apenas usuários autenticados possam acessar este controller
-    // Se você tiver roles definidas, poderá restringir ainda mais, por exemplo: [Authorize(Roles = "Professor")]
-    [Microsoft.AspNetCore.Authorization.Authorize]
+    [Microsoft.AspNetCore.Authorization.Authorize] // Garante que apenas usuários autenticados possam acessar este controller
     public class DashboardController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly HttpClient _httpClient;
-        private readonly UserManager<ApplicationUser> _userManager; // Injetado UserManager
-        private readonly ILogger<DashboardController> _logger; // Para logging
-        private readonly IConfiguration _configuration; // Para acessar configurações
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IProfessorDashboardService _dashboardService;
+        private readonly ILogger<DashboardController> _logger;
 
-        public DashboardController(ApplicationDbContext context,
-                                   IHttpClientFactory clientFactory,
-                                   UserManager<ApplicationUser> userManager, // Adicionado ao construtor
-                                   ILogger<DashboardController> logger, // Adicionado logger
-                                   IConfiguration configuration) // Adicionado configuration
+        public DashboardController(UserManager<ApplicationUser> userManager,
+                                   IProfessorDashboardService dashboardService,
+                                   ILogger<DashboardController> logger)
         {
-            _context = context;
-            _userManager = userManager; // Atribui o UserManager
-            _logger = logger; // Atribui o logger
-            _configuration = configuration; // Atribui configuration
-
-            _httpClient = clientFactory.CreateClient();
-            var pythonApiBaseUrl = _configuration["PythonApiBaseUrl"];
-
-            if (string.IsNullOrEmpty(pythonApiBaseUrl))
-            {
-                _logger.LogError("A URL base da API Python não está configurada em appsettings.json (PythonApiBaseUrl). Usando localhost:5000 como fallback.");
-                // CORREÇÃO: Usar _httpClient aqui
-                _httpClient.BaseAddress = new Uri("http://localhost:5000/");
-            }
-            else
-            {
-                // CORREÇÃO: Usar _httpClient aqui
-                _httpClient.BaseAddress = new Uri(pythonApiBaseUrl);
-            }
-            // CORREÇÃO: Usar _httpClient aqui
-            _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+            _userManager = userManager;
+            _dashboardService = dashboardService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
         {
-            // 1. Obter o usuário logado atualmente
             var currentUser = await _userManager.GetUserAsync(User);
-
             if (currentUser == null)
             {
-                // Se o usuário não estiver logado por algum motivo, redirecione para o login
-                // Ou exiba uma mensagem de erro adequada.
-                _logger.LogWarning("Tentativa de acessar o Dashboard sem usuário logado.");
+                _logger.LogWarning("Usuário não autenticado tentando acessar o dashboard. Redirecionando para login.");
                 return RedirectToAction("Login", "Account");
             }
 
-            // Usar o NomeCompleto do usuário logado para buscar os dados na API Python
-            string professorIdToFetch = currentUser.NomeCompleto;
-            _logger.LogInformation($"Usuário logado: {professorIdToFetch}. Buscando dados do dashboard.");
+            // Obtém o NomeCompleto do professor logado
+            var professorIdToFetch = currentUser.NomeCompleto;
 
             var viewModel = new DashboardViewModel
             {
-                ProfessorNome = professorIdToFetch // Usa o nome completo do professor logado
+                ProfessorNome = professorIdToFetch // Usa o nome do professor logado como valor inicial
             };
 
-            HttpResponseMessage dashboardDataResponse = null;
+            // Para exibir erros na View
+            string requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            var errorModel = new ErrorViewModel { RequestId = requestId };
 
             try
             {
-                // O endpoint da sua API Python é: /professor/dashboard-data?professor_id={professorId}
-                dashboardDataResponse = await _httpClient.GetAsync($"professor/dashboard-data?professor_id={System.Uri.EscapeDataString(professorIdToFetch)}");
+                // Chama o serviço para obter os dados do dashboard do professor
+                var dashboardData = await _dashboardService.GetProfessorDashboardDataAsync(professorIdToFetch);
 
-                if (dashboardDataResponse.IsSuccessStatusCode)
+                if (dashboardData != null)
                 {
-                    var content = await dashboardDataResponse.Content.ReadAsStringAsync();
-                    _logger.LogDebug($"Conteúdo da API Python recebido: {content}");
+                    // Popula o ViewModel com os dados retornados pela API Python
+                    viewModel.ProfessorNome = dashboardData.ProfessorNome;
+                    viewModel.TotalStudents = dashboardData.TotalStudents;
+                    viewModel.StudentsAtRisk = dashboardData.StudentsAtRisk;
+                    viewModel.TotalActivities = dashboardData.TotalActivities;
+                    viewModel.CurrentModuleInfo = dashboardData.CurrentModuleInfo ?? new CurrentModuleInfoViewModel();
+                    viewModel.CourseSummaries = dashboardData.CourseSummaries ?? new List<CourseSummaryViewModel>();
+                    viewModel.RecentActivities = dashboardData.RecentActivities ?? new List<RecentActivityViewModel>();
+                    viewModel.EvasionRiskCount = dashboardData.EvasionRiskCount;
+                    viewModel.StudentEvasionList = dashboardData.StudentEvasionList ?? new List<StudentEvasionInfoViewModel>();
 
-                    var pythonData = JsonConvert.DeserializeObject<DashboardViewModel>(content);
-
-                    if (pythonData != null)
-                    {
-                        // Atualiza o ViewModel com os dados da API
-                        viewModel.ProfessorNome = pythonData.ProfessorNome;
-                        viewModel.TotalStudents = pythonData.TotalStudents;
-                        viewModel.StudentsAtRisk = pythonData.StudentsAtRisk;
-                        viewModel.TotalActivities = pythonData.TotalActivities;
-                        viewModel.EvasionRiskCount = pythonData.EvasionRiskCount; // Certifique-se de que este campo está vindo da API
-                        viewModel.CurrentModuleInfo = pythonData.CurrentModuleInfo ?? new CurrentModuleInfoViewModel();
-                        viewModel.CourseSummaries = pythonData.CourseSummaries ?? new List<CourseSummaryViewModel>();
-                        viewModel.RecentActivities = pythonData.RecentActivities ?? new List<RecentActivityViewModel>();
-                        viewModel.StudentEvasionList = pythonData.StudentEvasionList ?? new List<StudentEvasionInfoViewModel>(); // Lista de evasão
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"API Python retornou JSON nulo ou vazio para o professor: {professorIdToFetch}");
-                        ViewBag.ErrorMessage = "Não foi possível processar os dados do dashboard (resposta vazia).";
-                    }
+                    _logger.LogInformation($"Dados do dashboard carregados com sucesso para o professor: {professorIdToFetch}");
                 }
                 else
                 {
-                    var errorContent = await dashboardDataResponse.Content.ReadAsStringAsync();
-                    _logger.LogError($"Erro ao obter dados do dashboard da API Python: {dashboardDataResponse.StatusCode} - {dashboardDataResponse.ReasonPhrase}. Detalhes: {errorContent}");
-                    ViewBag.ErrorMessage = $"Erro ao carregar dados do dashboard: {dashboardDataResponse.ReasonPhrase}. Verifique os logs para mais detalhes.";
+                    _logger.LogWarning($"Dados do dashboard nulos para o professor: {professorIdToFetch}. Exibindo dashboard vazio.");
+                    ViewBag.ErrorMessage = "Não foi possível carregar os dados do dashboard. Tente novamente mais tarde.";
                 }
             }
             catch (HttpRequestException httpEx)
             {
-                _logger.LogError(httpEx, $"Erro de conexão com a API Python para o professor {professorIdToFetch}. Verifique se a API está rodando em {_httpClient.BaseAddress}");
-                ViewBag.ErrorMessage = $"Erro de conexão com a API Python. Detalhes: {httpEx.Message}.";
+                _logger.LogError(httpEx, $"Erro de HTTP ao carregar o dashboard para o professor {professorIdToFetch}. Detalhes: {httpEx.Message}");
+                ViewBag.ErrorMessage = $"Erro de conexão com a API Python ao carregar o dashboard. Detalhes: {httpEx.Message}";
+                return View("Error", errorModel);
             }
-            catch (JsonSerializationException jsonEx)
+            catch (JsonSerializationException jsonEx) // JsonSerializationException é usada aqui
             {
-                string rawJson = dashboardDataResponse != null ? await dashboardDataResponse.Content.ReadAsStringAsync() : "N/A";
-                _logger.LogError(jsonEx, $"Erro na desserialização do JSON da API para o professor {professorIdToFetch}. JSON recebido: {rawJson}");
-                ViewBag.ErrorMessage = $"Erro ao processar dados da API. Detalhes: {jsonEx.Message}.";
+                _logger.LogError(jsonEx, $"Erro na desserialização do JSON da API do dashboard para o professor {professorIdToFetch}. Detalhes: {jsonEx.Message}");
+                ViewBag.ErrorMessage = $"Erro ao processar dados da API do dashboard. Detalhes: {jsonEx.Message}";
+                return View("Error", errorModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ocorreu um erro inesperado ao carregar o dashboard para o professor {professorIdToFetch}.");
-                ViewBag.ErrorMessage = $"Ocorreu um erro inesperado ao carregar o dashboard. Detalhes: {ex.Message}.";
+                _logger.LogError(ex, $"Ocorreu um erro inesperado ao carregar o dashboard para o professor {professorIdToFetch}. Detalhes: {ex.Message}");
+                ViewBag.ErrorMessage = $"Ocorreu um erro inesperado ao carregar o dashboard. Detalhes: {ex.Message}";
+                return View("Error", errorModel);
             }
 
             return View(viewModel);

@@ -36,35 +36,33 @@ namespace IaPioniers.Controllers
 
         private List<string> LoadAuthorizedNames()
         {
-            // Pega o caminho do arquivo do appsettings.json
-            var mappingFilePath = _configuration["Authorization:ProfessorMappingFilePath"];
+            // Caminho para o arquivo de mapeamento de professores
+            var filePath = Path.Combine(_env.ContentRootPath, _configuration["Authorization:ProfessorMappingFilePath"]);
 
-            if (string.IsNullOrEmpty(mappingFilePath))
+            if (!System.IO.File.Exists(filePath))
             {
-                throw new System.Exception("Caminho do arquivo de mapeamento de professores não configurado em appsettings.json (Authorization:ProfessorMappingFilePath).");
-            }
-
-            // ** IMPORTANTE: Usar ContentRootPath para obter o caminho base do projeto. **
-            // Isso garante que o caminho seja sempre resolvido corretamente em relação à raiz do seu projeto.
-            var fullPath = Path.Combine(_env.ContentRootPath, mappingFilePath);
-
-            if (!System.IO.File.Exists(fullPath))
-            {
-                throw new System.Exception($"Arquivo de mapeamento de professores não encontrado em: {fullPath}");
+                throw new System.IO.FileNotFoundException($"Arquivo de mapeamento de professores não encontrado em: {filePath}");
             }
 
             try
             {
-                var jsonContent = System.IO.File.ReadAllText(fullPath);
-                // Como o JSON é um dicionário, queremos apenas as chaves (nomes dos professores)
-                var mapping = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonContent);
-
-                // Retorna apenas as chaves (nomes) do dicionário
-                return new List<string>(mapping.Keys);
+                var jsonContent = System.IO.File.ReadAllText(filePath);
+                var mapping = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(jsonContent);
+                if (mapping != null)
+                {
+                    return new List<string>(mapping.Keys);
+                }
+                return new List<string>();
+            }
+            catch (JsonSerializationException ex)
+            {
+                // Este erro será mais específico se o JSON estiver malformado
+                throw new System.Exception($"Erro ao carregar ou desserializar o arquivo de mapeamento de professores: {ex.Message}");
             }
             catch (System.Exception ex)
             {
-                throw new System.Exception($"Erro ao carregar ou desserializar o arquivo de mapeamento de professores: {ex.Message}");
+                // Captura qualquer outra exceção inesperada
+                throw new System.Exception($"Ocorreu um erro inesperado ao carregar o arquivo de mapeamento de professores: {ex.Message}");
             }
         }
 
@@ -85,10 +83,19 @@ namespace IaPioniers.Controllers
                 if (result.Succeeded)
                 {
                     var user = await _userManager.FindByEmailAsync(model.Email);
+<<<<<<< Talles(duda)
+                    if (user != null)
+                    {
+                        // REDIRECIONA PARA ProfessorDashboard/ResumoDeDados PASSANDO O NOME COMPLETO DO USUÁRIO
+                        return RedirectToAction("ResumoDeDados", "ProfessorDashboard", new { professorId = user.NomeCompleto });
+                    }
+                    // Se o usuário for nulo por algum motivo, redireciona para a home como fallback
+=======
                     return RedirectToAction("ResumoDeDados", "ProfessorDashboard");
                 }
                 else
                 {
+>>>>>>> Duda(Talles)
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -107,13 +114,13 @@ namespace IaPioniers.Controllers
         {
             if (ModelState.IsValid)
             {
-                // ** NOVA LÓGICA DE VALIDAÇÃO DE NOME **
+                // NOVA LÓGICA DE VALIDAÇÃO DE NOME
                 if (!_authorizedNames.Contains(model.NomeCompleto))
                 {
                     ModelState.AddModelError("NomeCompleto", "Este nome não está autorizado para registro. Por favor, contate o administrador.");
                     return View(model); // Retorna a view com o erro
                 }
-                // ** FIM DA NOVA LÓGICA **
+                // FIM DA NOVA LÓGICA
 
                 var user = new ApplicationUser
                 {
@@ -129,7 +136,12 @@ namespace IaPioniers.Controllers
                     // Por enquanto, apenas registra o usuário.
                     // A lógica de atribuição de roles de Coordenador/Administrador virá depois.
                     await _signInManager.SignInAsync(user, isPersistent: false);
+<<<<<<< Talles(duda)
+                    // REDIRECIONA PARA ProfessorDashboard/ResumoDeDados APÓS REGISTRO
+                    return RedirectToAction("ResumoDeDados", "ProfessorDashboard", new { professorId = user.NomeCompleto });
+=======
                     return RedirectToAction("ResumoDeDados", "ProfessorDashboard");
+>>>>>>> Duda(Talles)
                 }
 
                 foreach (var error in result.Errors)
