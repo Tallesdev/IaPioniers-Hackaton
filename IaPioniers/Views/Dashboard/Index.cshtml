@@ -17,6 +17,13 @@
         </div>
     </header>
 
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="error-message">
+            <p><strong>Erro:</strong> @ViewBag.ErrorMessage</p>
+        </div>
+    }
+
     <section class="cards">
         @* CARD 1: Atividades *@
         <div class="card card-activities">
@@ -60,7 +67,7 @@
                 <span class="card-number">@Model.TotalStudents</span>
                 <p class="card-title">Resumo das Turmas</p>
             </div>
-            <button class="card-button primary">Gerar Relatório</button>
+            <a asp-controller="ProfessorDashboard" class="card-button primary" asp-action="ResumoDeDados" asp-route-professorId="@Model.ProfessorNome" class="button-link">Gerar Relatório</a>
         </div>
     </section>
 

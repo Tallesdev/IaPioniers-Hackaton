@@ -17,5 +17,8 @@ namespace IaPioniers.Services
         Task<DashboardViewModel> GetDashboardDataAsync(string professorId);
 
         Task<bool> GenerateReportAsync(string reportType);
+
+        // NOVO: Adicione esta declaração para o método que retorna a URL base da API Python
+        string GetPythonApiBaseUrl();
     }
 }

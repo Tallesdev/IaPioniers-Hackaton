@@ -146,6 +146,24 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+
+      @* Injeta UserManager e SignInManager para acessar dados do usuário logado *@
+    @using Microsoft.AspNetCore.Identity
+    @using IaPioniers.Models
+    @inject UserManager<ApplicationUser> UserManager
+    @inject SignInManager<ApplicationUser> SignInManager
+
+    @{
+        string professorNome = null;
+        if (SignInManager.IsSignedIn(User))
+        {
+            var currentUser = await UserManager.GetUserAsync(User);
+            if (currentUser != null)
+            {
+                professorNome = currentUser.NomeCompleto;
+            }
+        }
+    }
     <div class="sidebar">
         <div class="logo-atena">ATENA</div>
         <ul class="nav-list">
@@ -156,7 +174,11 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Student" ? "active" : "")" asp-area="" asp-controller="Student" asp-action="Index">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Students" ? "active" : "")"
+                   asp-area=""
+                   asp-controller="Students"
+                   asp-action="Index"
+                   asp-route-professorId="@professorNome">
                     <i class="fas fa-user-graduate"></i>
                     <span>Alunos</span>
                 </a>

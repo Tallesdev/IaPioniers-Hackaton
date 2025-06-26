@@ -5,33 +5,29 @@ import os
 import json
 import logging
 from datetime import datetime
-# Importar joblib se você tem certeza que RAW_LOGS_CACHE.pkl é salvo com joblib.dump
-# Caso contrário, pd.read_pickle é preferível para arquivos .pkl gerados por pandas.
-# Para compatibilidade, manterei pd.read_pickle conforme minha recomendação anterior.
-# import joblib 
 
 # Importar Blueprints
 from routes.professor_routes import professor_bp
 from routes.evasion_report_routes import evasion_report_bp
 from routes.status_routes import status_bp
 from routes.student_routes import student_bp
-from routes.course_routes import course_bp # Nova importação
+from routes.course_routes import course_bp
+from routes.students_overview_routes import students_overview_bp # NOVA IMPORTAÇÃO
+
+# Importar as constantes de threshold do evasion_risk_calculator.py
+# para que possam ser acessadas via app.config
+from evasion_risk_calculator import INACTIVITY_THRESHOLD_GLOBAL_DAYS, INACTIVITY_THRESHOLD_COURSE_DAYS, DEFAULT_RISK_THRESHOLD
 
 
 # Configuração do Logger
-# Ajuste o nível para INFO para logs menos verbosos em execução normal, DEBUG para depuração profunda.
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-# Ou para logs mais detalhados com timestamp:
-# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 app = Flask(__name__)
 
 # Definir diretórios base (consistentes com os scripts de previsão)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'data') # Para arquivos de configuração/mapeamento estáticos (como professor_curso_mapping.json)
-CACHE_DIR = os.path.join(BASE_DIR, 'cache') # Para arquivos de cache gerados pelos scripts de ML
-LOCAL_DATA_DIR = os.path.join(BASE_DIR, 'local_data') # Para arquivos do modelo em predict_evasion.py, e raw_logs_cache.pkl
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+CACHE_DIR = os.path.join(BASE_DIR, 'cache')
+LOCAL_DATA_DIR = os.path.join(BASE_DIR, 'local_data')
 
 # Criar diretórios se não existirem
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -43,14 +39,20 @@ PROCESSED_DATA_FILE = os.path.join(CACHE_DIR, 'processed_evasion_data.csv')
 RISK_SCORES_FILE = os.path.join(CACHE_DIR, 'evasion_predictions_detailed.csv')
 FEATURES_FILE = os.path.join(CACHE_DIR, 'student_features.csv')
 PROFESSOR_MAPPING_FILE = os.path.join(DATA_DIR, 'professor_curso_mapping.json')
-RAW_LOGS_FILE = os.path.join(LOCAL_DATA_DIR, 'raw_logs_cache.pkl') # Caminho para o cache de logs brutos
+RAW_LOGS_FILE = os.path.join(LOCAL_DATA_DIR, 'raw_logs_cache.pkl')
 
 # Variáveis de cache globais (serão preenchidas pela função load_data_to_cache)
-app.config['PROCESSED_DATA_CACHE'] = pd.DataFrame() # Inicia com DataFrame vazio
+app.config['PROCESSED_DATA_CACHE'] = pd.DataFrame()
 app.config['RISK_SCORES_CACHE'] = pd.DataFrame()
 app.config['FEATURES_CACHE'] = pd.DataFrame()
-app.config['PROFESSOR_COURSE_MAPPING'] = {} # Inicia com dicionário vazio
-app.config['RAW_LOGS_CACHE'] = pd.DataFrame() # Inicia com DataFrame vazio
+app.config['PROFESSOR_COURSE_MAPPING'] = {}
+app.config['RAW_LOGS_CACHE'] = pd.DataFrame()
+
+# NOVO: Carregar as constantes de threshold para o app.config
+app.config['INACTIVITY_THRESHOLD_GLOBAL_DAYS_CONFIG'] = INACTIVITY_THRESHOLD_GLOBAL_DAYS
+app.config['INACTIVITY_THRESHOLD_COURSE_DAYS_CONFIG'] = INACTIVITY_THRESHOLD_COURSE_DAYS
+app.config['DEFAULT_RISK_THRESHOLD_CONFIG'] = DEFAULT_RISK_THRESHOLD
+
 
 def load_data_to_cache():
     """Carrega os dados processados e de risco de evasão para o cache da aplicação."""
@@ -59,11 +61,9 @@ def load_data_to_cache():
     # Carregar RAW_LOGS_CACHE
     if os.path.exists(RAW_LOGS_FILE):
         try:
-            # Preferir pd.read_pickle para arquivos .pkl gerados por pandas
             app.config['RAW_LOGS_CACHE'] = pd.read_pickle(RAW_LOGS_FILE)
             app.logger.info(f"[{datetime.now()}] '{RAW_LOGS_FILE}' carregado com sucesso. {len(app.config['RAW_LOGS_CACHE'])} linhas.")
             
-            # Garante que 'time_dt' existe e é do tipo datetime
             if 'time_dt' not in app.config['RAW_LOGS_CACHE'].columns or \
                not pd.api.types.is_datetime64_any_dtype(app.config['RAW_LOGS_CACHE']['time_dt']):
                 app.logger.info(f"[{datetime.now()}] Coluna 'time_dt' não encontrada ou não é datetime. Tentando criar/converter...")
@@ -73,9 +73,8 @@ def load_data_to_cache():
                     app.config['RAW_LOGS_CACHE']['time_dt'] = pd.to_datetime(app.config['RAW_LOGS_CACHE']['date'], errors='coerce')
                 else:
                     app.logger.warning(f"[{datetime.now()}] Nenhuma coluna 'time' ou 'date' encontrada para criar 'time_dt' no RAW_LOGS_CACHE.")
-                    app.config['RAW_LOGS_CACHE']['time_dt'] = pd.NaT # Define como Not a Time se não encontrar
+                    app.config['RAW_LOGS_CACHE']['time_dt'] = pd.NaT
             
-            # Remover linhas com NaT em 'time_dt' após a conversão
             original_rows = len(app.config['RAW_LOGS_CACHE'])
             app.config['RAW_LOGS_CACHE'].dropna(subset=['time_dt'], inplace=True)
             if len(app.config['RAW_LOGS_CACHE']) < original_rows:
@@ -83,12 +82,11 @@ def load_data_to_cache():
 
         except Exception as e:
             app.logger.error(f"[{datetime.now()}] Erro ao carregar ou processar '{RAW_LOGS_FILE}': {e}", exc_info=True)
-            app.config['RAW_LOGS_CACHE'] = pd.DataFrame() # Define como DataFrame vazio em caso de erro
+            app.config['RAW_LOGS_CACHE'] = pd.DataFrame()
     else:
         app.logger.warning(f"[{datetime.now()}] Arquivo '{RAW_LOGS_FILE}' não encontrado. Execute 'collect_raw_logs.py' para coletar logs brutos.")
         app.config['RAW_LOGS_CACHE'] = pd.DataFrame()
 
-    # Carregar df_processed_data (de process_evasion_data.py) - Mantenha se for usado em alguma rota
     if os.path.exists(PROCESSED_DATA_FILE):
         try:
             app.config['PROCESSED_DATA_CACHE'] = pd.read_csv(PROCESSED_DATA_FILE, encoding='utf-8')
@@ -100,7 +98,6 @@ def load_data_to_cache():
         app.logger.warning(f"[{datetime.now()}] Arquivo '{PROCESSED_DATA_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py'.")
         app.config['PROCESSED_DATA_CACHE'] = pd.DataFrame()
 
-    # Carregar df_risk_scores_cache (de evasion_predictions_detailed.csv)
     if os.path.exists(RISK_SCORES_FILE):
         try:
             app.config['RISK_SCORES_CACHE'] = pd.read_csv(RISK_SCORES_FILE, encoding='utf-8')
@@ -113,7 +110,6 @@ def load_data_to_cache():
         app.logger.warning(f"[{datetime.now()}] Arquivo '{RISK_SCORES_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py' ou 'predict_evasion.py'.")
         app.config['RISK_SCORES_CACHE'] = pd.DataFrame()
 
-    # Carregar df_features_cache (de student_features.csv)
     if os.path.exists(FEATURES_FILE):
         try:
             app.config['FEATURES_CACHE'] = pd.read_csv(FEATURES_FILE, encoding='utf-8')
@@ -126,7 +122,6 @@ def load_data_to_cache():
         app.logger.warning(f"[{datetime.now()}] Arquivo '{FEATURES_FILE}' não encontrado. Pode ser necessário executar 'process_evasion_data.py'.")
         app.config['FEATURES_CACHE'] = pd.DataFrame()
 
-    # Carregar mapeamento professor-curso
     if os.path.exists(PROFESSOR_MAPPING_FILE):
         try:
             with open(PROFESSOR_MAPPING_FILE, 'r', encoding='utf-8') as f:
@@ -160,7 +155,7 @@ def health_check():
         "raw_logs_loaded": not app.config['RAW_LOGS_CACHE'].empty,
         "risk_scores_loaded": not app.config['RISK_SCORES_CACHE'].empty,
         "features_loaded": not app.config['FEATURES_CACHE'].empty,
-        "professor_course_mapping_loaded": bool(app.config['PROFESSOR_COURSE_MAPPING']), # Verifica se o dicionário não está vazio
+        "professor_course_mapping_loaded": bool(app.config['PROFESSOR_COURSE_MAPPING']),
         "timestamp": datetime.now().isoformat()
     }
     return jsonify(status)
@@ -171,7 +166,7 @@ app.register_blueprint(evasion_report_bp)
 app.register_blueprint(student_bp)
 app.register_blueprint(status_bp)
 app.register_blueprint(course_bp)
+app.register_blueprint(students_overview_bp) # NOVO REGISTRO
 
 if __name__ == '__main__':
-    # Este é um servidor de desenvolvimento, não recomendado para produção
     app.run(debug=True, host='0.0.0.0', port=5000)

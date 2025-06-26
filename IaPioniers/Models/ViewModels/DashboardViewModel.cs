@@ -2,10 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-
-using Newtonsoft.Json; // Certifique-se de ter o pacote Newtonsoft.Json instalado no seu projeto C#
-
-
+using Newtonsoft.Json;
 
 namespace IaPioniers.Models.ViewModels
 {
@@ -32,52 +29,56 @@ namespace IaPioniers.Models.ViewModels
         [JsonProperty("recentActivities")]
         public List<RecentActivityViewModel> RecentActivities { get; set; }
 
-        [JsonProperty("evasionRiskCount")] // Mapeia para o novo campo na API Python
+        [JsonProperty("evasionRiskCount")]
         public int EvasionRiskCount { get; set; }
 
-        [JsonProperty("studentEvasionList")] // Mapeia para a nova lista na API Python
+        [JsonProperty("studentEvasionList")]
         public List<StudentEvasionInfoViewModel> StudentEvasionList { get; set; }
+
+        public List<StudentOverviewViewModel> StudentsOverviewList { get; set; }
+
+        public string SelectedCourseName { get; set; }
 
         public DashboardViewModel()
         {
             CourseSummaries = new List<CourseSummaryViewModel>();
             RecentActivities = new List<RecentActivityViewModel>();
-            CurrentModuleInfo = new CurrentModuleInfoViewModel();
             StudentEvasionList = new List<StudentEvasionInfoViewModel>();
+            StudentsOverviewList = new List<StudentOverviewViewModel>();
         }
     }
 
     public class CurrentModuleInfoViewModel
     {
         [JsonProperty("number")]
-        public int? Number { get; set; }
+        public int Number { get; set; }
 
         [JsonProperty("start_date")]
-        public string Start_date { get; set; }
+        public DateTime StartDate { get; set; }
 
         [JsonProperty("end_date")]
-        public string End_date { get; set; }
+        public DateTime EndDate { get; set; }
 
         [JsonProperty("display_name")]
-        public string Display_name { get; set; }
+        public string DisplayName { get; set; }
     }
 
     public class CourseSummaryViewModel
     {
+        [JsonProperty("AverageEngagementScore")]
+        public double AverageEngagementScore { get; set; }
+
         [JsonProperty("CourseName")]
         public string CourseName { get; set; }
 
-        [JsonProperty("StudentsInCourse")]
-        public int StudentsInCourse { get; set; }
+        [JsonProperty("LastActivityDate")]
+        public DateTime LastActivityDate { get; set; }
 
         [JsonProperty("StudentsAtRiskInCourse")]
         public int StudentsAtRiskInCourse { get; set; }
 
-        [JsonProperty("AverageEngagementScore")]
-        public decimal AverageEngagementScore { get; set; }
-
-        [JsonProperty("LastActivityDate")]
-        public string LastActivityDate { get; set; }
+        [JsonProperty("StudentsInCourse")]
+        public int StudentsInCourse { get; set; }
     }
 
     public class RecentActivityViewModel
@@ -95,33 +96,58 @@ namespace IaPioniers.Models.ViewModels
         public string Usuario { get; set; }
     }
 
-    // CLASSE ATUALIZADA: ViewModel para informações de evasão de um único aluno
     public class StudentEvasionInfoViewModel
     {
-        [JsonProperty("studentId")] // Novo campo
+        [JsonProperty("studentId")]
         public string StudentId { get; set; }
 
         [JsonProperty("studentName")]
         public string StudentName { get; set; }
 
-        [JsonProperty("courseName")] // Novo campo
+        [JsonProperty("courseName")]
         public string CourseName { get; set; }
 
-        [JsonProperty("totalAccesses")] // Já existia, mas o nome da propriedade JSON foi adicionado
+        [JsonProperty("totalAccesses")]
         public int TotalAccesses { get; set; }
 
-        [JsonProperty("daysWithoutAccess")] // Já existia, mas o nome da propriedade JSON foi adicionado
+        [JsonProperty("daysWithoutAccess")]
         public int DaysWithoutAccess { get; set; }
 
-        [JsonProperty("riskScore")] // Alterado de EvasionProbability e nome da propriedade JSON
-        public int RiskScore { get; set; } // 0-100
+        [JsonProperty("riskScore")]
+        public int RiskScore { get; set; }
 
-        [JsonProperty("evasionReasons")] // Novo campo
+        [JsonProperty("evasionReasons")]
         public List<string> EvasionReasons { get; set; }
 
         public StudentEvasionInfoViewModel()
         {
-            EvasionReasons = new List<string>(); // Inicializa a lista para evitar NullReferenceException
+            EvasionReasons = new List<string>();
+        }
+    }
+
+    public class StudentOverviewViewModel
+    {
+        [JsonProperty("studentId")]
+        public string StudentId { get; set; }
+
+        [JsonProperty("studentName")]
+        public string StudentName { get; set; }
+
+        [JsonProperty("courseName")]
+        public string CourseName { get; set; }
+
+        [JsonProperty("status")]
+        public string Status { get; set; }
+
+        [JsonProperty("statusDetails")]
+        public List<string> StatusDetails { get; set; }
+
+        [JsonProperty("recentSubmission")]
+        public string RecentSubmission { get; set; }
+
+        public StudentOverviewViewModel()
+        {
+            StatusDetails = new List<string>();
         }
     }
 }

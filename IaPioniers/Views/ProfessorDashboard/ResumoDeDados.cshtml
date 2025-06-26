@@ -1,41 +1,39 @@
 ﻿@model IaPioniers.Models.ViewModels.DashboardViewModel
 
 @{
-    ViewData["Title"] = "Resumo de Dados"; // Novo título da página, conforme o protótipo
-    Layout = "_Layout"; // Garante que este layout está sendo usado
+    ViewData["Title"] = "Resumo de Dados";
+    Layout = "_Layout";
 }
 
 @section Styles {
-    @* Garanta que dashboard.css é carregado para estilos gerais do layout principal *@
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
-    @* Novo CSS específico para esta página *@
     <link rel="stylesheet" href="~/css/resumodados.css" asp-append-version="true" />
 }
 
-@* As tags <head> e <style> foram removidas daqui, pois o _Layout e os arquivos CSS externos cuidam disso. *
-@* O div "dashboard-container" e a "aside class="sidebar"" foram removidos daqui,
-   pois o _Layout.cshtml já lida com a estrutura principal e inclui o _NavHeader. *@
-
 <div class="main-content">
     <header class="top-header">
-        <h1>Resumo de Dados</h1> @* Título conforme protótipo *@
+        <h1>Resumo de Dados</h1>
         <div class="user-profile">
-            @* Usando .user-profile como no Index e dashboard.css *
-            <span class="user-name">Prof. @Model.ProfessorNome</span>
-            @* Adicionei uma imagem de placeholder para o perfil, como no Index.cshtml,
-               se você não tiver uma imagem real de perfil para o professor. *@
+            <span class="user-name">Prof. @(Model?.ProfessorNome ?? "Carregando...")</span> @* Adicionado null-conditional operator *@
             <img src="https://placehold.co/40x40/7B3E90/FFFFFF?text=P" alt="Foto do Professor" class="user-avatar" onerror="this.onerror=null;this.src='https://placehold.co/40x40/7B3E90/FFFFFF?text=P';">
         </div>
     </header>
 
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="error-message">
+            <p><strong>Erro:</strong> @ViewBag.ErrorMessage</p>
+        </div>
+    }
+
     <section class="cards">
         <div class="card-resumo evasao">
-            <h2>@Model.EvasionRiskCount</h2> @* Assumindo que Model.EvasionRiskCount contém o número "10" *@
+            <h2>@(Model?.EvasionRiskCount.ToString() ?? "0")</h2> @* Adicionado null-conditional operator e ToString() *@
             <p>Risco de Evasão</p>
             <button>Detalhes</button>
         </div>
         <div class="card-resumo relatorio">
-            <h2>Relatório da Turma</h2> @* Texto do protótipo *@
+            <h2>Relatório da Turma</h2>
             <p>Gerar Relatório</p>
             <button>Gerar</button>
         </div>
@@ -45,8 +43,8 @@
         <div class="filter-section">
             <label for="courseSelect">Turma:</label>
             <select id="courseSelect">
-                <option value="">Todas as Turmas</option> @* Adiciona opção para ver todos *@
-                @if (Model.CourseSummaries != null && Model.CourseSummaries.Any())
+                <option value="">Todas as Turmas</option>
+                @if (Model?.CourseSummaries != null && Model.CourseSummaries.Any()) @* Verificação de Model nulo também *@
                 {
                     @foreach (var course in Model.CourseSummaries.OrderBy(c => c.CourseName))
                     {
@@ -57,14 +55,14 @@
         </div>
 
         <h3>Lista de Alunos</h3>
-        @if (Model.StudentEvasionList != null && Model.StudentEvasionList.Any())
+        @if (Model?.StudentEvasionList != null && Model.StudentEvasionList.Any()) @* Verificação de Model nulo também *@
         {
             <div class="table-responsive">
                 <table id="studentEvasionTable">
                     <thead>
                         <tr>
                             <th>Nome do Aluno</th>
-                            <th>Turma</th> @* Adicionada coluna Turma aqui também para filtro *@
+                            <th>Turma</th>
                             <th>Risco (%)</th>
                             <th>Motivos de Evasão</th>
                             <th>Ações</th>
@@ -73,14 +71,12 @@
                     <tbody>
                         @foreach (var student in Model.StudentEvasionList.OrderByDescending(s => s.RiskScore))
                         {
-                            @* Adiciona data-course-name para filtragem via JS *@
                             <tr data-course-name="@student.CourseName" data-student-id="@student.StudentId">
                                 <td>@student.StudentName</td>
-                                <td>@student.CourseName</td> @* Exibe o nome da turma aqui *@
+                                <td>@student.CourseName</td>
                                 <td class="evasion-probability-cell">
                                     @{
                                         string dotClass = "";
-                                        // Usando o RiskScore diretamente da API (0-100)
                                         if (student.RiskScore <= 25) { dotClass = "green"; }
                                         else if (student.RiskScore <= 60) { dotClass = "orange"; }
                                         else { dotClass = "red"; }
@@ -144,24 +140,20 @@
             button.addEventListener('click', async function() {
                 const studentName = this.dataset.studentName;
                 const evasionProbability = this.dataset.evasionProbability;
-                const daysWithoutAccess = this.dataset.daysWithoutAccess; // Obtendo daysWithoutAccess
+                const daysWithoutAccess = this.dataset.daysWithoutAccess;
 
-                // Exibe o modal e o indicador de carregamento
                 document.getElementById('emailModal').style.display = 'flex';
                 document.getElementById('modalStudentName').textContent = studentName;
                 document.getElementById('loadingIndicator').style.display = 'block';
-                document.getElementById('emailDraftTextarea').value = ''; // Limpa o textarea
+                document.getElementById('emailDraftTextarea').value = '';
 
-                // Constrói o prompt para o LLM, incluindo dias sem acesso
                 const prompt = `Gere um rascunho de e-mail breve e empático de um professor para o aluno(a) ${studentName}. A probabilidade de evasão dele(a) é de ${evasionProbability}%. Ele(a) está sem acesso à plataforma há ${daysWithoutAccess} dias. O e-mail deve expressar preocupação, oferecer suporte e gentilmente encorajá-lo(a) a se reengajar, sem soar acusatório. Mantenha o e-mail conciso e em Português do Brasil.`;
 
                 try {
-                    // Chama a API Gemini para gerar o e-mail
                     let chatHistory = [];
                     chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                     const payload = { contents: chatHistory };
-                    // A API Key será fornecida automaticamente pelo ambiente do Canvas.
-                    const apiKey = ""; // Deixe vazio para o Canvas injetar
+                    const apiKey = "";
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -192,26 +184,22 @@
                         console.error("Estrutura de resposta inesperada da API Gemini:", result);
                     }
 
-                    // Exibe o texto gerado
                     document.getElementById('emailDraftTextarea').value = generatedText;
 
                 } catch (error) {
                     console.error("Erro ao gerar e-mail com a API Gemini:", error);
                     document.getElementById('emailDraftTextarea').value = `Erro ao gerar e-mail: ${error.message}`;
                 } finally {
-                    // Esconde o indicador de carregamento
                     document.getElementById('loadingIndicator').style.display = 'none';
                 }
             });
         });
 
-        // Função para fechar o modal de e-mail
         function closeEmailModal() {
             document.getElementById('emailModal').style.display = 'none';
-            document.getElementById('emailDraftTextarea').value = ''; // Limpa o conteúdo ao fechar
+            document.getElementById('emailDraftTextarea').value = '';
         }
 
-        // Função para copiar o texto do rascunho para a área de transferência
         function copyEmailDraft() {
             const textarea = document.getElementById('emailDraftTextarea');
             textarea.select();
@@ -219,12 +207,10 @@
             alert('Rascunho de e-mail copiado para a área de transferência!');
         }
 
-        // FUNÇÃO DE FILTRO PARA A LISTA DE ALUNOS POR TURMA (AJUSTADA)
         document.addEventListener('DOMContentLoaded', function() {
             const courseSelect = document.getElementById('courseSelect');
             if (courseSelect) {
                 courseSelect.addEventListener('change', filterStudentEvasionList);
-                // Aplica o filtro inicial ao carregar a página
                 filterStudentEvasionList();
             }
         });
@@ -239,9 +225,9 @@
             rows.forEach(row => {
                 const courseName = row.getAttribute('data-course-name');
                 if (selectedCourse === "" || courseName === selectedCourse) {
-                    row.style.display = ''; // Mostra a linha
+                    row.style.display = '';
                 } else {
-                    row.style.display = 'none'; // Esconde a linha
+                    row.style.display = 'none';
                 }
             });
         }
