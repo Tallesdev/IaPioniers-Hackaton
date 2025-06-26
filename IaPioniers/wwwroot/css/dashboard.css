@@ -113,7 +113,7 @@ body {
         border-radius: 8px;
         color: var(--sidebar-text); /* USANDO A VARIÁVEL */
         text-decoration: none;
-        font-size: 1.1em;
+        font-size: 1.5em;
         transition: background-color 0.3s ease, color 0.3s ease;
     }
 
@@ -142,6 +142,7 @@ body {
             text-decoration: none;
             font-weight: 600;
             transition: background-color 0.3s ease;
+            width:140px;
         }
 
             .sidebar .logout-button a:hover {
