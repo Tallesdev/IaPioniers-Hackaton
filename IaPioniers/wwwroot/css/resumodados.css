@@ -49,7 +49,7 @@
     }
 
     .card-resumo h2 {
-        font-size: 4em; /* Título grande, tamanho ajustado */
+        font-size: 4em; /* Título grande, tamanho ajustado para centralização */
         margin: 0;
         line-height: 1;
         color: #fff;
@@ -340,7 +340,7 @@
 .no-data {
     text-align: center;
     padding: 30px;
-    color: #7f8c8d;
+    color: #ecf0f1; /* Cor do texto para contraste com o fundo escuro */
     font-style: italic;
 }
 
