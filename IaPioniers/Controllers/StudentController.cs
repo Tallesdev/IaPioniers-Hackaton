@@ -1,13 +1,12 @@
-<<<<<<< Geovana
+
 ﻿// Controllers/StudentController.cs
 // Localização: IaPioniers/Controllers/StudentController.cs
 using IaPioniers.Models; // Importa o namespace onde seu StudentSummary está
 using IaPioniers.Models.ViewModels; // Garanta que este namespace está correto
-=======
 
 ﻿// Controllers/StudentController.cs (ou AlunoController.cs)
 
->>>>>>> Backup-Geovana
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -83,15 +82,11 @@ namespace IaPioniers.Controllers
             // Define a turma padrão selecionada (se houver uma)
             viewModel.SelectedClass = "Turma A"; // Por exemplo, "Turma A" será a padrão
 
-<<<<<<< Geovana
+
             ViewData["Title"] = "Alunos";
             return View(viewModel); // Passa o ViewModel para a View
         }
     }
 }
-=======
-    // Ações para Editar, Detalhes, Excluir viriam aqui...
-    // public IActionResult Edit(int id) { ... }
-    // public IActionResult Details(int id) { ... }
-    // public IActionResult Delete(int id) { ... }
->>>>>>> Backup-Geovana
+
+
