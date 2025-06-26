@@ -1,0 +1,53 @@
+﻿@model IaPioniers.Models.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Registrar";
+}
+
+<h2>Registrar Usuário</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="validation-summary-errors text-danger">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<form asp-action="Register" method="post">
+    <div>
+        <label asp-for="NomeCompleto"></label>
+        <input asp-for="NomeCompleto" class="form-control" />
+        <span asp-validation-for="NomeCompleto" class="text-danger"></span>
+    </div>
+
+    <div>
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div>
+        <label asp-for="Senha"></label>
+        <input asp-for="Senha" class="form-control" />
+        <span asp-validation-for="Senha" class="text-danger"></span>
+    </div>
+
+    <div>
+        <label asp-for="ConfirmarSenha"></label>
+        <input asp-for="ConfirmarSenha" class="form-control" />
+        <span asp-validation-for="ConfirmarSenha" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Registrar</button>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
