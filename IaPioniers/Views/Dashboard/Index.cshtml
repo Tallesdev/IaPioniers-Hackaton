@@ -60,7 +60,8 @@
                 <span class="card-number">@Model.TotalStudents</span>
                 <p class="card-title">Resumo das Turmas</p>
             </div>
-            <button class="card-button primary">Gerar Relatório</button>
+            <a asp-controller="Relatorio" asp-action="Index" class="card-button primary">Gerar Relatório</a>
+
         </div>
     </section>
 
