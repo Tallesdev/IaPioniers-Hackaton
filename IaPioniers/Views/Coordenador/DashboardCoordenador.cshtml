@@ -1,0 +1,80 @@
+﻿@model IaPioniers.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Visão Geral";
+    Layout = "_Layout";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<div class="main-content">
+    <div class="top-header">
+        <h1>Visão Geral</h1>
+        <div class="user-profile">
+            <span class="user-name">Coordenador</span>
+            <img src="~/images/avatar.png" alt="Avatar" class="user-avatar">
+        </div>
+    </div>
+
+    <div class="cards">
+        <div class="card card-class">
+            @* Changed from card-courses to card-class as per CSS and screenshot *@
+            <img src="~/images/caderno.png" alt="Cursos" class="card-image">
+            <div class="card-title">Cursos</div>
+            <div class="card-details">36 cursos</div> @* Changed from p.courses-count to div.card-details as per CSS *@
+            <a href="#" class="card-button secondary">Ver cursos</a> @* Changed from btn btn-primary-outline to card-button secondary *@
+        </div>
+
+        <div class="card card-summary">
+            @* Combined card-summary and bg-blue, as card-summary in CSS already handles background *@
+            <div class="card-title">Resumo dos Cursos</div> @* Changed from card-header to card-title as per CSS *@
+            <div class="card-number">112</div> @* Changed from summary-number to card-number as per CSS *@
+            <div class="card-title">Alunos</div> @* Using card-title for label as per screenshot visual hierarchy *@
+            <div class="card-number">36</div> @* Changed from summary-number to card-number as per CSS *@
+            <div class="card-title">Cursos Registrados</div> @* Using card-title for label as per screenshot visual hierarchy *@
+        </div>
+
+        <div class="card card-activities">
+            @* Changed from card-report bg-blue-dark to card-activities as per CSS and screenshot *@
+            <button class="card-button primary">Gerar Relatório</button> @* Changed from btn btn-generate-report to card-button primary *@
+        </div>
+    </div>
+
+    <div class="section-evasion-risk">
+        @* Retained section-evasion-risk as it's a distinct section not covered by generic card styles *@
+        <h3>Risco de Evasão Geral</h3>
+        <div class="evasion-risk-content">
+            <div class="chart-container">
+                <div class="pie-chart">
+                    
+                </div>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="legend-color-box green"></span> Sem Risco
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color-box orange"></span> Risco Médio
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color-box red"></span> Risco Alto
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+
+    .avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 2px solid #fff; 
+                box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        
+
+    }
+
+
+</style>

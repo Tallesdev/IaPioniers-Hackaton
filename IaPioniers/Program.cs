@@ -3,21 +3,21 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using IaPioniers.Data;
 using IaPioniers.Models;
-using IaPioniers.Models.Models_DB; // Mantenha se ApplicationUser está aqui
+using IaPioniers.Models.Models_DB; 
 using System.Net.Http;
 using System;
-using Microsoft.Extensions.Logging; // Garantir import de ILogger
+using Microsoft.Extensions.Logging; 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Configuração da Conexão com o Banco de Dados ---
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// --- Configuração do Identity (Autenticação/Autorização) ---
+
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -34,7 +34,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
-builder.Logging.SetMinimumLevel(LogLevel.Debug); // Define o nível mínimo para DEBUG
+builder.Logging.SetMinimumLevel(LogLevel.Debug); 
 
 // --- Injeção de Dependência de Serviços ---
 
@@ -95,13 +95,13 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection(); // Redireciona HTTP para HTTPS
-app.UseStaticFiles();     // Permite servir arquivos estáticos (CSS, JS, imagens)
+app.UseHttpsRedirection(); 
+app.UseStaticFiles();     
 
-app.UseRouting();         // Habilita o roteamento
+app.UseRouting();        
 
-app.UseAuthentication();  // Habilita autenticação (Identity)
-app.UseAuthorization();   // Habilita autorização
+app.UseAuthentication();  
+app.UseAuthorization();   
 
 // --- Mapeamento de Rotas ---
 
