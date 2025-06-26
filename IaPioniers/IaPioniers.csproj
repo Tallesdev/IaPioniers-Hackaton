@@ -13,6 +13,8 @@
   <ItemGroup>
     <Folder Include="unifenas_api_python\cache\" />
     <Folder Include="unifenas_api_python\local_data\" />
+    <Folder Include="Views\Dashboard\" />
+    <Folder Include="Views\ProfessorDashboard\" />
     <Folder Include="wwwroot\images\" />
   </ItemGroup>
 
