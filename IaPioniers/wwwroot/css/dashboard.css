@@ -128,14 +128,15 @@ body {
   font-size: 1.3em;
 }
 
-.sidebar .logout-button {
-  margin-top: 20px;
-  text-align: center;
-}
+    .sidebar .logout-button {
+        margin-top: 20px;
+        text-align: center;
+        
+    }
 
 .sidebar .logout-button a {
   display: inline-block;
-  padding: 10px 20px;
+  padding: 10px 80px;
   background-color: var(--accent-red); /* USANDO A VARIÁVEL */
   color: var(--text-light); /* USANDO A VARIÁVEL */
   border-radius: 8px;
@@ -152,19 +153,19 @@ body {
 /* 3. ESTILOS DO CONTEÚDO PRINCIPAL (DASHBOARD ESPECÍFICO) */
 /* ========================================================== */
 
-.main-content {
+/*.main-content {
   flex-grow: 1;
   padding: 30px;
-  background-color: var(--bg-primary); /* USANDO A VARIÁVEL */
-  min-height: 100vh;
-  color: var(--text-primary); /* USANDO A VARIÁVEL */
-  transition: background-color 0.3s ease, color 0.3s ease;
+  background-color: var(--bg-primary);*/ /* USANDO A VARIÁVEL */
+  /*min-height: 100vh;
+  color: var(--text-primary);*/ /* USANDO A VARIÁVEL */
+  /*transition: background-color 0.3s ease, color 0.3s ease;*/
   /* ﻿
 /* Estilos para o conteúdo principal do dashboard */
-  /* .main-content {
+.main-content {
     flex-grow: 1;
-    padding: 30px; /* Padding maior */
-  /*  background-color: #f8f9fa; /* Cor de fundo sutil para o main content */
+    padding: 30px; /*Padding maior*/
+    background-color: #f8f9fa; /* Cor de fundo sutil para o main content */
 }
 
 .top-header {
@@ -252,20 +253,16 @@ body {
 
 /* Card de Atividades (primeiro card azul) */
 .card.card-activities {
-  background-image: linear-gradient(
-    135deg,
-    var(--accent-blue) 0%,
-    var(--accent-dark-blue) 100%
-  ); /* USANDO VARIÁVEIS */
-  color: white; /* Texto branco para contraste (não precisa de variável para branco puro) */
-  align-items: flex-start;
-  /* background-image: linear-gradient(135deg, #3498db 0%, #2980b9 100%); /* Gradiente azul do protótipo */
-  /* color: white; /* Texto branco para contraste */
-  /* align-items: flex-start; */
-  /* display: flex; */
-  /* flex-direction: column; */
-  /* justify-content: center; */
-  /* align-items: center; */
+    background-image: linear-gradient( 135deg, var(--accent-blue) 0%, var(--accent-dark-blue) 100% ); /* USANDO VARIÁVEIS */
+    color: white; /* Texto branco para contraste (não precisa de variável para branco puro) */
+    align-items: flex-start;
+    background-image: linear-gradient(135deg, #3498db 0%, #2980b9 100%); /*Gradiente azul do protótipo */
+    color: white; /* Texto branco para contraste */
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .card.card-activities .card-icon {
@@ -284,24 +281,24 @@ body {
   margin-bottom: 25px;
 }
 
-.card.card-activities .card-button.primary {
-  background-color: transparent;
-  border: 2px solid white;
-  color: white;
-  /* ESTILO DO BOTÃO "VER ATIVIDADES" - FANTASMA BRANCO */
-  /* background-color: transparent; */
-  /* border: 2px solid white; */
-  /* color: white; */
-  /* padding: 12px 25px; */
-  /* border-radius: 50px; */
-  /* white-space: nowrap; */
-  /* cursor: pointer; */
-  /* font-size: 1em; */
-  /* font-weight: 600; */
-  /* transition: background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease; */
-  /* text-transform: uppercase; */
-  /* letter-spacing: 1px; */
-}
+    .card.card-activities .card-button.primary {
+        background-color: transparent;
+        border: 2px solid white;
+        color: white;
+        /*ESTILO DO BOTÃO "VER ATIVIDADES" - FANTASMA BRANCO */
+        background-color: transparent;
+        border: 2px solid white;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 50px;
+        white-space: nowrap;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
 
 .card.card-activities .card-button.primary:hover {
   background-color: rgba(255, 255, 255, 0.2);
@@ -1063,61 +1060,57 @@ body.dark-theme .action-btn.delete-btn:hover {
     max-width: 100%;
   }
 
-  .form-select {
-    width: 100%;
+    .form-select {
+        width: 100%;
+    }
     /* Evasao
 /* Estilos para a seção de Risco de Evasão Geral */
-    /* .section-evasion-risk { */
-    /* background-color: white;  */
-    /* border-radius: 15px;  */
-    /* box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); */
-    /* padding: 30px;  */
-    /* margin-top: 40px;  */
-    /* } */
+     .section-evasion-risk { 
+     background-color: white;  
+     border-radius: 15px;  
+     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); 
+     padding: 30px;  
+     margin-top: 40px;  
+     } 
 
-    /* .section-evasion-risk h3 { */
-    /* margin-top: 0; */
-    /* margin-bottom: 25px; */
-    /* color: #34495e;  */
-    /* font-size: 1.8em;  */
-    /* font-weight: 600; */
-    /* } */
+     .section-evasion-risk h3 { 
+     margin-top: 0; 
+     margin-bottom: 25px; 
+     color: #34495e;  
+     font-size: 1.8em;  
+     font-weight: 600; 
+     } 
 
-    /* .evasion-risk-content { */
-    /* display: flex;  */
-    /* align-items: center; */
-    /* gap: 40px; 
-} */
+     .evasion-risk-content { 
+     display: flex;  
+     align-items: center; 
+     gap: 40px; 
+} 
 
-    /* .chart-container { */
-    /* width: 200px;  */
-    /* height: 200px;  */
-    /* position: relative; */
-    /* border-radius: 50%;  */
-    /* overflow: hidden;  */
+     .chart-container { 
+     width: 200px;  
+     height: 200px;  
+     position: relative; 
+     border-radius: 50%;  
+     overflow: hidden;  
 
-    /* } */
+     } 
 
-    /* .pie-chart { */
-    /* width: 100%; */
-    /* height: 100%; */
-    /* position: relative; */
-    /* border-radius: 50%; */
-    /* O conic-gradient cria o gráfico de pizza. Ajuste as porcentagens para bater com o protótipo.
-       No protótipo (image_8f4b96.png), o verde parece ser o maior, seguido pelo amarelo e vermelho.
-       Vamos estimar as porcentagens com base no visual. Por exemplo:
-       Verde (Sem Risco): ~50%
-       Laranja (Risco Médio): ~25%
-       Vermelho (Risco Alto): ~25%
-    */
-    /* background: conic-gradient( #27ae60 0% 50%,
+     .pie-chart { 
+     width: 100%; 
+     height: 100%; 
+     position: relative; 
+     border-radius: 50%; 
+    
+    
+     background: conic-gradient( #27ae60 0% 50%,
     #f39c12 50% 75%,
-    #e74c3c 75% 100% */
-    /* ); */
+    #e74c3c 75% 100% 
+     ); 
 
-    /* } */
+     } 
 
-    /* .pie-chart::after {
+     .pie-chart::after {
         content: '';
         position: absolute;
         top: 50%;
@@ -1126,40 +1119,40 @@ body.dark-theme .action-btn.delete-btn:hover {
         width: 100px; 
         height: 100px;
         border-radius: 50%;
-        background-color: white; */
-    /* } */
+        background-color: white; 
+     } 
 
-    /* .legend {
+     .legend {
     display: flex;
     flex-direction: column; 
     gap: 12px; 
     font-size: 1.1em; 
-    color: #555; */
-    /* } */
+    color: #555; 
+     } 
 
-    /* .legend-item {
+     .legend-item {
     display: flex;
     align-items: center; 
-} */
+} 
 
-    /* .legend-color-box {
+     .legend-color-box {
     width: 18px; 
     height: 18px; 
     margin-right: 12px; 
     border-radius: 4px; 
-} */
+} 
 
-    /* .legend-color-box.green {
+     .legend-color-box.green {
         background-color: #27ae60; 
-    } */
-    /* 
+    } 
+     
     .legend-color-box.orange {
         background-color: #f39c12; 
-    } */
+    } 
 
-    /* .legend-color-box.red {
+     .legend-color-box.red {
         background-color: #e74c3c; 
-    } */
+    } 
 
     .student-cards-grid {
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -1300,13 +1293,15 @@ body.dark-theme .action-btn.delete-btn:hover {
     }
 
     .student-cards-grid {
-      grid-template-columns: 1fr;
-      /* @media (max-width: 768px) {
-    .evasion-risk-content {
-        flex-direction: column; /* Empilha o gráfico e a legenda em telas menores */
-      /* gap: 30px; */
-      /* } */
+        grid-template-columns: 1fr;
 
+        @media (max-width: 768px) {
+            .evasion-risk-content {
+                flex-direction: column; /* Empilha o gráfico e a legenda em telas menores */
+                gap: 30px;
+            }
+        }
+    }
       .chart-container {
         width: 160px; /* Reduz o tamanho do gráfico em telas menores*/
         height: 160px;
@@ -1341,11 +1336,9 @@ body.dark-theme .action-btn.delete-btn:hover {
         }
       }
 
-      /* .student-status-display,
+       .student-status-display,
     .student-delivery-display {
         font-size: 0.95em;
     }
-} */
-    }
-  }
-}
+} 
+    

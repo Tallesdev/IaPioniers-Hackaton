@@ -76,15 +76,15 @@ namespace IaPioniers.Controllers
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
-            {
+           {
                 var result = await _signInManager.PasswordSignInAsync(
                     model.Email, model.Senha, isPersistent: false, lockoutOnFailure: false);
 
                 if (result.Succeeded)
                 {
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("ResumoDeDados", "ProfessorDashboard");
                 }
-
+ 
                 ModelState.AddModelError("", "Login inválido. Verifique email e senha.");
             }
             return View(model);
@@ -122,7 +122,7 @@ namespace IaPioniers.Controllers
                     // Por enquanto, apenas registra o usuário.
                     // A lógica de atribuição de roles de Coordenador/Administrador virá depois.
                     await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("ResumoDeDados", "ProfessorDashboard");
                 }
 
                 foreach (var error in result.Errors)

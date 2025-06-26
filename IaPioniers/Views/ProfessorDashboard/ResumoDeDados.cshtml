@@ -6,15 +6,11 @@
 }
 
 @section Styles {
-    @* Garanta que dashboard.css é carregado para estilos gerais do layout principal *@
+    
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
-    @* Novo CSS específico para esta página *@
     <link rel="stylesheet" href="~/css/resumodados.css" asp-append-version="true" />
 }
 
-@* As tags <head> e <style> foram removidas daqui, pois o _Layout e os arquivos CSS externos cuidam disso. *
-@* O div "dashboard-container" e a "aside class="sidebar"" foram removidos daqui,
-   pois o _Layout.cshtml já lida com a estrutura principal e inclui o _NavHeader. *@
 
 <div class="main-content">
     <header class="top-header">

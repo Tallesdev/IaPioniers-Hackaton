@@ -46,6 +46,7 @@
             z-index: 1000; /* Garante que fique acima de outros elementos */
         }
 
+
         .sidebar-header {
             text-align: center;
             margin-bottom: 30px;
@@ -85,7 +86,10 @@
                 .sidebar-nav .nav-item:hover,
                 .sidebar-nav .nav-item.active {
                     background-color: #34495e;
-                    color: #3498db;
+                    color: white; 
+                    font-weight: 600; /* Mais negrito */
+                    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); /* Sombra no hover/ativo */
+                    transform: translateY(-2px); /* Efeito de elevação sutil */
                     font-weight: 500;
                 }
 
@@ -100,23 +104,25 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px 20px;
+            padding: 20px 20px;
             background-color: #e74c3c;
             color: white;
             text-decoration: none;
             border-radius: 8px;
             transition: background-color 0.3s ease;
             font-size: 1.1em;
-            margin-top: -80px;
+         
 			
 		}
 
             .logout-btn i {
                 margin-right: 10px;
+                font-size: 1.1em;
             }
 
             .logout-btn:hover {
                 background-color: #c0392b;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             }
 
 
@@ -127,14 +133,14 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto; 
-            height: 100vh; 
-            box-sizing: border-box;
+            min-height: 100vh;
+           
         }
 
         /* Estilo para o conteúdo que será renderizado pela View (Dashboard/Index, etc.) */
         .main-content-area {
             flex: 1; /* Ocupa todo o espaço vertical disponível */
-            padding: 80px;
+            padding: 0px;
            
         }
 
