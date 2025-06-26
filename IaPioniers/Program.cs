@@ -94,7 +94,7 @@ app.UseAuthorization();    // Habilita autorização
 // Mapeia rotas de controladores MVC (com views)
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}"); // Alterado para Account e Login
 
 // Mapeia rotas de Razor Pages (se você as usa)
 app.MapRazorPages();

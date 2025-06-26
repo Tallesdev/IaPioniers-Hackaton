@@ -2,7 +2,10 @@
 
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+
+using IaPioniers.Controllers;
+using Newtonsoft.Json; // Certifique-se de ter o pacote Newtonsoft.Json instalado no seu projeto C#
+
 
 namespace IaPioniers.Models.ViewModels
 {
@@ -28,6 +31,8 @@ namespace IaPioniers.Models.ViewModels
 
         [JsonProperty("recentActivities")]
         public List<RecentActivityViewModel> RecentActivities { get; set; }
+        public int EvasionRiskCount { get; internal set; }
+        public List<StudentEvasionInfoViewModel> StudentEvasionList { get; internal set; }
 
         [JsonProperty("evasionRiskCount")] // Mapeia para o novo campo na API Python
         public int EvasionRiskCount { get; set; }
