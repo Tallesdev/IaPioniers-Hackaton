@@ -1,9 +1,7 @@
-﻿/* wwwroot/css/dashboard.css */
-
+﻿ /* wwwroot/css/dashboard.css */
 /* ========================================================== */
 /* 1. VARIÁVEIS CSS (CUSTOM PROPERTIES) PARA TEMAS CLARO E ESCURO */
 /* ========================================================== */
-
 :root {
     /* Cores do Tema Claro (Padrão) */
     --bg-primary: #f4f7f6; /* Cor de fundo principal da body */

@@ -17,6 +17,13 @@
         </div>
     </header>
 
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="error-message">
+            <p><strong>Erro:</strong> @ViewBag.ErrorMessage</p>
+        </div>
+    }
+
     <section class="cards">
         @* CARD 1: Atividades *@
         <div class="card card-activities">
@@ -60,7 +67,8 @@
                 <span class="card-number">@Model.TotalStudents</span>
                 <p class="card-title">Resumo das Turmas</p>
             </div>
-            <a asp-controller="Relatorio" asp-action="Index" class="card-button primary">Gerar Relatório</a>
+
+            <a asp-controller="ProfessorDashboard" class="card-button primary" asp-action="ResumoDeDados" asp-route-professorId="@Model.ProfessorNome" class="button-link">Gerar Relatório</a>
 
         </div>
     </section>
@@ -98,6 +106,9 @@
                                             case "andamento":
                                                 statusClass = "status-andamento";
                                                 break;
+                                            case "submetida": // Adicionei 'submetida' se a API retornar isso
+                                                statusClass = "status-andamento"; // Pode ser o mesmo de 'em andamento'
+                                                break;
                                             default:
                                                 statusClass = "status-default";
                                                 break;
@@ -106,7 +117,8 @@
                                 }
                                 <span class="status-dot @statusClass"></span> @statusText
                             </td>
-                            <td>@atividade.DataHora.ToString("dd 'de' MMMM 'de' yyyy")</td>
+                            @* CORREÇÃO AQUI: Garante que DataHora é DateTime antes de formatar *@
+                            <td>@(atividade.DataHora != DateTime.MinValue ? atividade.DataHora.ToString("dd 'de' MMMM 'às' HH:mm") : "N/A")</td>
                         </tr>
                     }
                 </tbody>
@@ -114,7 +126,7 @@
         }
         else
         {
-            <p>Nenhuma atividade recente disponível no módulo.</p>
+            <p class="no-data-message">Nenhuma atividade recente disponível no módulo.</p>
         }
     </section>
 </div>

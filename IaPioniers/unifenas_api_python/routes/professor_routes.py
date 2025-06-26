@@ -2,11 +2,15 @@
 
 from flask import Blueprint, jsonify, request, current_app
 import pandas as pd
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 import json
-from academic_calendar_utils import get_module_info_by_fixed_dates
+import numpy as np # Importar numpy para tratar NaNs (pd.notna)
 
 professor_bp = Blueprint('professor', __name__, url_prefix='/api/professor')
+
+# Defina o score máximo possível das regras para normalização
+# SOMA DOS POINTS_ de evasion_risk_calculator.py
+MAX_POSSIBLE_RULE_SCORE = 100 
 
 @professor_bp.route('/dashboard-data', methods=['GET'])
 def get_professor_dashboard_data():
@@ -29,7 +33,14 @@ def get_professor_dashboard_data():
             current_app.logger.error(f"[{datetime.now()}] Caches de dados ou mapeamento estão vazios/inválidos no app.config. Verifique o carregamento inicial em app.py.")
             return jsonify({"error": "Dados internos não disponíveis para processamento. Tente carregar novamente os caches."}), 500
 
+        current_app.logger.debug(f"[{datetime.now()}] Conteúdo completo de PROFESSOR_COURSE_MAPPING no config: {professor_course_mapping}")
+        current_app.logger.debug(f"[{datetime.now()}] Tentando obter cursos para o professor: '{professor_id}'.")
+
         professor_courses = professor_course_mapping.get(professor_id)
+        
+        current_app.logger.info(f"[{datetime.now()}] Cursos BRUTOS obtidos para '{professor_id}' do mapeamento: {professor_courses}")
+
+
         if not professor_courses:
             current_app.logger.warning(f"[{datetime.now()}] Professor '{professor_id}' não encontrado no mapeamento ou sem cursos associados.")
             return jsonify({
@@ -44,46 +55,53 @@ def get_professor_dashboard_data():
                 "studentEvasionList": []
             })
 
-        # --- Determinação do Módulo Atual usando academic_calendar_utils ---
-        # Definindo a data atual como uma data dentro do Módulo 2 de 2025 para teste/apresentação.
-        current_date = datetime(2025, 6, 15).date() # Use .date() para compatibilidade
-        # current_date = date.today() # Para usar a data atual
+        # --- NORMALIZAÇÃO DE CASE ---
+        professor_courses_normalized = [c.upper() for c in professor_courses]
+        current_app.logger.info(f"[{datetime.now()}] Cursos NORMALIZADOS para '{professor_id}': {professor_courses_normalized}")
 
-        current_app.logger.debug(f"[{datetime.now()}] Data de referência para determinação do módulo: {current_date.strftime('%Y-%m-%d')}")
+        # --- Determinação do Módulo Atual ---
+        current_date = datetime.now()
+        current_app.logger.debug(f"[{datetime.now()}] Data atual para determinação do módulo: {current_date.strftime('%Y-%m-%d %H:%M:%S')}")
 
-        current_module_info_raw = get_module_info_by_fixed_dates(current_date)
+        modules = [
+            {"number": 1, "start": datetime(2025, 3, 3), "end": datetime(2025, 5, 4, 23, 59, 59, 999999), "display_name": "Módulo 1"},
+            {"number": 2, "start": datetime(2025, 5, 5), "end": datetime(2025, 6, 28, 23, 59, 59, 999999), "display_name": "Módulo 2"}, 
+            {"number": 3, "start": datetime(2025, 6, 29), "end": datetime(2025, 8, 25, 23, 59, 59, 999999), "display_name": "Módulo 3"}, 
+            # Adicione mais módulos conforme necessário
+        ]
 
-        if not current_module_info_raw:
-            current_app.logger.warning(f"[{datetime.now()}] Nenhum módulo encontrado para a data {current_date.strftime('%Y-%m-%d')}. Verifique as definições em academic_calendar.py.")
-            return jsonify({
-                "professorNome": professor_id,
-                "totalStudents": 0,
-                "studentsAtRisk": 0,
-                "totalActivities": 0,
-                "currentModuleInfo": {},
-                "courseSummaries": [],
-                "recentActivities": [],
-                "evasionRiskCount": 0,
-                "studentEvasionList": []
-            })
-        
-        current_module_info_start_date = datetime.combine(current_module_info_raw["start_date"], datetime.min.time())
-        current_module_info_end_date = datetime.combine(current_module_info_raw["end_date"], datetime.max.time())
+        current_module_info = None
+        for module in modules:
+            if module["start"] <= current_date <= module["end"]:
+                current_module_info = {
+                    "module_number": module["number"],
+                    "start_date": module["start"],
+                    "end_date": module["end"],
+                    "display_name": module["display_name"]
+                }
+                break
 
-        current_module_info = {
-            "module_number": current_module_info_raw["module_number"],
-            "start_date": current_module_info_start_date,
-            "end_date": current_module_info_end_date,
-            "display_name": current_module_info_raw["display_name"] if "display_name" in current_module_info_raw else f"Módulo {current_module_info_raw['module_number']}"
-        }
+        if not current_module_info:
+            current_app.logger.info(f"[{datetime.now()}] Nenhum módulo ativo encontrado para a data {current_date.strftime('%Y-%m-%d %H:%M:%S')}. Usando o último módulo como referência.")
+            if modules:
+                current_module_info = {
+                    "module_number": modules[-1]["number"],
+                    "start_date": modules[-1]["start"],
+                    "end_date": modules[-1]["end"],
+                    "display_name": modules[-1]["display_name"]
+                }
+            else:
+                current_app.logger.error(f"[{datetime.now()}] Nenhuma definição de módulo encontrada.")
+                return jsonify({"error": "Nenhuma definição de módulo encontrada."}), 500
 
+        current_module_info_start_date = current_module_info["start_date"]
+        current_module_info_end_date = current_module_info["end_date"]
         current_app.logger.info(f"[{datetime.now()}] Datas de filtro do módulo ativo: Início={current_module_info_start_date}, Fim={current_module_info_end_date}")
 
-        # --- Lógica de Filtro e Cálculo de Métricas ---
         if not pd.api.types.is_datetime64_any_dtype(df_raw_logs_cache['time_dt']):
              current_app.logger.error(f"[{datetime.now()}] 'time_dt' em df_raw_logs_cache não é datetime. Isso indica um problema no carregamento em app.py.")
              return jsonify({"error": "Erro interno: Formato de data inválido nos logs brutos."}), 500
-            
+        
         filtered_logs_by_module = df_raw_logs_cache[
             (df_raw_logs_cache['time_dt'] >= current_module_info_start_date) &
             (df_raw_logs_cache['time_dt'] <= current_module_info_end_date)
@@ -94,43 +112,54 @@ def get_professor_dashboard_data():
             current_app.logger.error(f"[{datetime.now()}] Coluna 'course_fullname' ausente nos logs filtrados.")
             return jsonify({"error": "Erro interno: Coluna de curso ausente."}), 500
 
-        filtered_logs_for_professor = filtered_logs_by_module[
-            filtered_logs_by_module['course_fullname'].isin(professor_courses)
-        ].copy() 
-        current_app.logger.info(f"[{datetime.now()}] Logs APÓS FILTRO DE CURSO DO PROFESSOR: {len(filtered_logs_for_professor)} linhas. (Cursos: {professor_courses})")
+        if 'course_fullname_normalized' not in filtered_logs_by_module.columns:
+            filtered_logs_by_module['course_fullname_normalized'] = filtered_logs_by_module['course_fullname'].astype(str).str.upper()
 
-        # --- Cálculos Principais ---
+        filtered_logs_for_professor = filtered_logs_by_module[
+            filtered_logs_by_module['course_fullname_normalized'].isin(professor_courses_normalized)
+        ].copy() 
+        current_app.logger.info(f"[{datetime.now()}] Logs APÓS FILTRO DE CURSO DO PROFESSOR: {len(filtered_logs_for_professor)} linhas. (Cursos: {professor_courses_normalized})")
+
         total_students = filtered_logs_for_professor['user_id'].nunique()
         
-        students_at_risk_df_filtered = df_risk_scores_cache[
-            (df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())) &
-            (df_risk_scores_cache['is_at_risk'] == 1)
-        ]
-        students_at_risk = students_at_risk_df_filtered['user_id'].nunique()
+        # Filtrar os scores de risco para os cursos do professor
+        professor_risk_scores = df_risk_scores_cache[
+            df_risk_scores_cache['course_fullname'].str.upper().isin(professor_courses_normalized) # Usar normalized_professor_courses para consistência
+        ].copy() # Adicionado .copy() para evitar SettingWithCopyWarning
+        current_app.logger.debug(f"[{datetime.now()}] professor_risk_scores (primeiras 5 linhas):\n{professor_risk_scores.head().to_string()}")
+        current_app.logger.debug(f"[{datetime.now()}] Contagem de is_at_risk em professor_risk_scores:\n{professor_risk_scores['is_at_risk'].value_counts().to_string()}")
+
+
+        students_at_risk_df = professor_risk_scores[
+            professor_risk_scores['user_id'].isin(filtered_logs_for_professor['user_id'].unique()) &
+            professor_risk_scores['is_at_risk'] == 1
+        ].copy() # Adicionado .copy()
+        students_at_risk = students_at_risk_df['user_id'].nunique()
+        current_app.logger.debug(f"[{datetime.now()}] students_at_risk_df (primeiras 5 linhas):\n{students_at_risk_df.head().to_string()}")
+        current_app.logger.debug(f"[{datetime.now()}] students_at_risk_df está vazio? {students_at_risk_df.empty}")
         current_app.logger.debug(f"[{datetime.now()}] Total de alunos para {professor_id}: {total_students}, Alunos em risco: {students_at_risk}")
 
         total_activities = len(filtered_logs_for_professor)
 
-        # --- Resumo por Curso ---
         course_summaries_list = []
         if not filtered_logs_for_professor.empty:
             students_in_course_raw = filtered_logs_for_professor.groupby('course_fullname')['user_id'].nunique().reset_index(name='StudentsInCourse')
             
-            valid_risk_users = df_risk_scores_cache['user_id'].unique().tolist() if not df_risk_scores_cache.empty else []
-            valid_feature_users = df_features_cache['user_id'].unique().tolist() if not df_features_cache.empty else []
+            valid_risk_users = df_risk_scores_cache['user_id'].unique() if not df_risk_scores_cache.empty else []
+            valid_feature_users = df_features_cache['user_id'].unique() if not df_features_cache.empty else []
 
             df_risk_scores_professor_courses = df_risk_scores_cache[
-                (df_risk_scores_cache['course_fullname'].isin(professor_courses)) &
-                (df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())) &
+                (df_risk_scores_cache['course_fullname'].isin(professor_courses)) & 
+                (df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique())) &
                 (df_risk_scores_cache['user_id'].isin(valid_risk_users)) 
             ].copy()
             
             students_at_risk_in_course = df_risk_scores_professor_courses[df_risk_scores_professor_courses['is_at_risk'] == 1] \
-                                             .groupby('course_fullname')['user_id'].nunique().reset_index(name='StudentsAtRiskInCourse')
+                                                .groupby('course_fullname')['user_id'].nunique().reset_index(name='StudentsAtRiskInCourse')
             
             df_features_professor_courses = df_features_cache[
-                (df_features_cache['course_fullname'].isin(professor_courses)) &
-                (df_features_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())) &
+                (df_features_cache['course_fullname'].isin(professor_courses)) & 
+                (df_features_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique())) &
                 (df_features_cache['user_id'].isin(valid_feature_users)) 
             ].copy()
 
@@ -156,9 +185,8 @@ def get_professor_dashboard_data():
         else:
             course_summaries_list = []
 
-        # --- Atividades Recentes ---
-        recent_activities_data = []
-        user_ids_in_module = filtered_logs_for_professor['user_id'].unique().tolist() if not filtered_logs_for_professor.empty else []
+        recent_activities_data = [] 
+        user_ids_in_module = filtered_logs_for_professor['user_id'].unique() if not filtered_logs_for_professor.empty else []
 
         if not df_raw_logs_cache.empty and len(user_ids_in_module) > 0: 
             recent_logs_for_display = df_raw_logs_cache[
@@ -171,28 +199,46 @@ def get_professor_dashboard_data():
                 recent_logs_for_display = recent_logs_for_display.sort_values(by='time_dt', ascending=False).head(50)
 
                 for _, log in recent_logs_for_display.iterrows():
-                    action_info = log.get('action', 'Ação Desconhecida').capitalize()
-                    target_info = log.get('target', '').capitalize()
-                    user_name_info = str(log.get('user_name', log.get('user_id', 'Desconhecido'))) 
-
-                    if target_info:
-                        nome_atividade = f"{action_info} {target_info}"
-                    else:
-                        nome_atividade = action_info
+                    action_info = str(log.get('action', 'Ação Desconhecida')).capitalize()
+                    event_info = str(log.get('eventname', 'Evento Desconhecida')).capitalize()
+                    target_info = str(log.get('target', '')).capitalize()
+                    object_info = str(log.get('object', '')).capitalize()
+                    user_name_info = "Desconhecido"
+                    if 'user_name' in log and pd.notna(log['user_name']):
+                        user_name_info = str(log['user_name'])
+                    elif not df_features_cache.empty and 'user_name' in df_features_cache.columns:
+                        feature_user_name = df_features_cache[df_features_cache['user_id'] == log['user_id']]['user_name'].iloc[0] if not df_features_cache[df_features_cache['user_id'] == log['user_id']].empty else None
+                        if pd.notna(feature_user_name):
+                            user_name_info = str(feature_user_name)
+                    if user_name_info == "Desconhecido":
+                         user_name_info = f"Aluno {log.get('user_id', 'Desconhecido')}"
                     
-                    status_amigavel = "N/A" 
-                    if action_info == "Graded":
-                        status_amigavel = "Concluída" 
-                    elif action_info == "Submitted":
-                        status_amigavel = "Submetida"
-                    elif action_info == "Started":
-                        status_amigavel = "Em Andamento"
+                    raw_status = log.get('status', None)
+                    if raw_status:
+                        status_amigavel = str(raw_status).capitalize()
+                    else:
+                        status_amigavel = "N/A"
+
+                    nome_atividade = "Atividade Desconhecida"
+                    if action_info and event_info:
+                        nome_atividade = f"{action_info} {event_info}"
+                        parts = []
+                        if target_info:
+                            parts.append(target_info)
+                        if object_info:
+                            parts.append(object_info)
+                        if parts:
+                            nome_atividade += f" ({' - '.join(parts)})"
+                    elif action_info:
+                        nome_atividade = action_info
+                    elif event_info:
+                        nome_atividade = event_info
                     
                     recent_activities_data.append({
                         "Acao": nome_atividade,
                         "Status": status_amigavel,
                         "DataHora": log['time_dt'].isoformat(),
-                        "Usuario": user_name_info 
+                        "Usuario": user_name_info
                     })
             else:
                 current_app.logger.debug(f"[{datetime.now()}] Nenhum log recente encontrado para exibição no módulo atual.")
@@ -201,72 +247,135 @@ def get_professor_dashboard_data():
 
         current_app.logger.debug(f"[{datetime.now()}] Atividades recentes geradas para {len(recent_activities_data)} atividades.")
 
-        # --- CALCULAR EVASION RISK COUNT E STUDENT EVASION LIST POR CURSO ---
-        evasion_risk_count = 0 # Inicializa como 0, será calculado por curso
+        # --- Construindo a StudentEvasionList ---
         student_evasion_list = []
+        if not students_at_risk_df.empty: # Usar students_at_risk_df que já está filtrado para o professor e is_at_risk=1
+            risk_user_ids = students_at_risk_df['user_id'].unique()
 
-        if not df_risk_scores_cache.empty and not df_features_cache.empty:
-            # Filtra scores de risco e features para os cursos do professor e alunos logados no módulo
-            risk_scores_for_professor_courses = df_risk_scores_cache[
-                df_risk_scores_cache['course_fullname'].isin(professor_courses) &
-                df_risk_scores_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())
+            # Filtrar features apenas para os alunos em risco que pertencem aos cursos do professor
+            # E que estão no módulo atual (se aplicável, embora o df_risk_scores_cache já seja global)
+            filtered_features_for_risk_students = df_features_cache[
+                df_features_cache['user_id'].isin(risk_user_ids) &
+                df_features_cache['course_fullname'].str.upper().isin(professor_courses_normalized)
             ].copy()
 
-            features_for_professor_courses = df_features_cache[
-                df_features_cache['course_fullname'].isin(professor_courses) &
-                df_features_cache['user_id'].isin(filtered_logs_for_professor['user_id'].unique().tolist())
-            ].copy()
-            
-            # Atualiza evasion_risk_count com base nos alunos em risco filtrados
-            evasion_risk_count = risk_scores_for_professor_courses[risk_scores_for_professor_courses['is_at_risk'] == 1]['user_id'].nunique()
+            current_app.logger.debug(f"[{datetime.now()}] Colunas de students_at_risk_df antes do merge para lista de evasão: {students_at_risk_df.columns.tolist()}")
+            current_app.logger.debug(f"[{datetime.now()}] Colunas de filtered_features_for_risk_students antes do merge para lista de evasão: {filtered_features_for_risk_students.columns.tolist()}")
 
-            # Junta os dados de risco e features para calcular as métricas por aluno E por curso
-            # Se um aluno está em múltiplos cursos e tem risco, ele aparecerá múltiplas vezes aqui.
-            merged_evasion_data_per_course = pd.merge(
-                risk_scores_for_professor_courses[['user_id', 'user_name', 'course_fullname', 'evasion_probability_ml', 'is_at_risk']],
-                features_for_professor_courses[['user_id', 'course_fullname', 'overall_last_access_days_ago', 'course_activity_count']],
-                on=['user_id', 'course_fullname'], # Chave de junção dupla
-                how='inner' 
+            # As colunas necessárias para o merge e para a saída final
+            required_cols_risk = ['user_id', 'course_fullname', 'overall_evasion_score', 'evasion_reasons']
+            required_cols_features = ['user_id', 'course_fullname', 'user_name', 'total_actions_global', 'overall_last_access_days_ago'] # Removido days_since_last_valuable_submission_course daqui
+
+            # Verificar se as colunas existem antes de tentar acessá-las
+            for col in required_cols_risk:
+                if col not in students_at_risk_df.columns:
+                    current_app.logger.warning(f"[{datetime.now()}] Coluna '{col}' ausente em students_at_risk_df. Isso pode afetar a lista de evasão.")
+            for col in required_cols_features:
+                if col not in filtered_features_for_risk_students.columns:
+                    current_app.logger.warning(f"[{datetime.now()}] Coluna '{col}' ausente em filtered_features_for_risk_students. Isso pode afetar a lista de evasão.")
+
+            merged_student_data = pd.merge(
+                students_at_risk_df, 
+                filtered_features_for_risk_students, 
+                on=['user_id', 'course_fullname'], 
+                how='left',
+                suffixes=('_risk', '_features') 
             )
+            current_app.logger.debug(f"[{datetime.now()}] Colunas de merged_student_data após o merge para lista de evasão: {merged_student_data.columns.tolist()}")
+            current_app.logger.debug(f"[{datetime.now()}] merged_student_data (primeiras 5 linhas):\n{merged_student_data.head().to_string()}")
+            current_app.logger.debug(f"[{datetime.now()}] Contagem de linhas em merged_student_data: {len(merged_student_data)}")
+
+
+            students_at_risk_detailed = merged_student_data.copy()
+
+            students_at_risk_detailed['total_actions_global'] = students_at_risk_detailed['total_actions_global'].fillna(0).astype(int)
+            students_at_risk_detailed['overall_last_access_days_ago'] = students_at_risk_detailed['overall_last_access_days_ago'].fillna(0).astype(int)
             
-            # Filtra apenas os alunos em risco para a lista de exibição
-            students_at_risk_per_course_for_list = merged_evasion_data_per_course[
-                merged_evasion_data_per_course['is_at_risk'] == 1
-            ]
+            # --- NOVO: Tratamento condicional para 'days_since_last_valuable_submission_course' ---
+            if 'days_since_last_valuable_submission_course' in students_at_risk_detailed.columns:
+                students_at_risk_detailed['days_since_last_valuable_submission_course'] = students_at_risk_detailed['days_since_last_valuable_submission_course'].fillna(-1).astype(int)
+            else:
+                current_app.logger.warning(f"[{datetime.now()}] Coluna 'days_since_last_valuable_submission_course' não encontrada em students_at_risk_detailed. Usando valor padrão para 'daysWithoutAccess'.")
+                students_at_risk_detailed['days_since_last_valuable_submission_course'] = -1 # Garante que a coluna exista com um valor padrão
+            # --- FIM NOVO ---
 
-            if not students_at_risk_per_course_for_list.empty:
-                # Ordena pela probabilidade de evasão (desc) e depois pelo nome do aluno
-                students_at_risk_per_course_for_list = students_at_risk_per_course_for_list.sort_values(
-                    by=['evasion_probability_ml', 'user_name'], ascending=[False, True]
-                )
+            # NOVO CÁLCULO DO RISK SCORE: NORMALIZADO PELAS REGRAS (0-100%)
+            students_at_risk_detailed['riskScoreDisplay'] = students_at_risk_detailed['overall_evasion_score'].apply(
+                lambda x: min(100, int(round((x / MAX_POSSIBLE_RULE_SCORE) * 100))) if MAX_POSSIBLE_RULE_SCORE > 0 else 0
+            )
+            current_app.logger.debug(f"[{datetime.now()}] students_at_risk_detailed (primeiras 5 linhas com riskScoreDisplay):\n{students_at_risk_detailed[['user_name_features', 'course_fullname', 'overall_evasion_score', 'riskScoreDisplay']].head().to_string()}")
 
-                for _, student_row in students_at_risk_per_course_for_list.iterrows():
-                    student_evasion_list.append({
-                        "StudentName": student_row['user_name'],
-                        "CourseName": student_row['course_fullname'], # Agora inclui o nome do curso
-                        "TotalAccesses": int(student_row['course_activity_count']), # Acessos DENTRO DESTE CURSO
-                        "DaysWithoutAccess": int(student_row['overall_last_access_days_ago']), # Dias sem acesso (geral, ou adaptar se precisar por curso)
-                        "EvasionProbability": int(round(student_row['evasion_probability_ml'] * 100))
-                    })
+
+            def parse_evasion_reasons(reasons):
+                if pd.isna(reasons) or reasons is None:
+                    return []
+                if isinstance(reasons, list):
+                    return reasons
+                if isinstance(reasons, str):
+                    try:
+                        parsed = json.loads(reasons.replace("'", "\"")) 
+                        if isinstance(parsed, list):
+                            return [str(item) for item in parsed]
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                return [str(reasons)] if str(reasons) else []
+
+            evasion_reasons_col = 'evasion_reasons_risk' if 'evasion_reasons_risk' in students_at_risk_detailed.columns else 'evasion_reasons'
+            students_at_risk_detailed[evasion_reasons_col] = students_at_risk_detailed[evasion_reasons_col].apply(parse_evasion_reasons)
+
+            for _, row in students_at_risk_detailed.iterrows():
+                student_name = "Desconhecido"
+                if 'user_name_features' in row and pd.notna(row['user_name_features']):
+                    student_name = str(row['user_name_features'])
+                elif 'user_name_risk' in row and pd.notna(row['user_name_risk']): 
+                    student_name = str(row['user_name_risk'])
+                elif 'user_name' in row and pd.notna(row['user_name']): 
+                    student_name = str(row['user_name'])
+                else:
+                    # CORREÇÃO AQUI: Usar 'user_id' em vez de 'user_id_risk'
+                    raw_log_user_name = df_raw_logs_cache[df_raw_logs_cache['user_id'] == row['user_id']]['user_name'].iloc[0] if not df_raw_logs_cache[df_raw_logs_cache['user_id'] == row['user_id']].empty else None
+                    if pd.notna(raw_log_user_name) and str(raw_log_user_name).lower() != 'nan':
+                        student_name = str(raw_log_user_name)
+                    else:
+                        # CORREÇÃO AQUI: Usar 'user_id' em vez de 'user_id_risk'
+                        student_name = f"Aluno {row.get('user_id', 'Desconhecido')}" 
+
+                reasons_for_student = row[evasion_reasons_col]
+                if not reasons_for_student:
+                    reasons_for_student = ["Nenhuma razão de regra detectada."]
+
+                # Usar days_since_last_valuable_submission_course ou days_since_last_access_global como fallback
+                days_without_access = int(row.get('days_since_last_valuable_submission_course', row.get('overall_last_access_days_ago', -1)))
+
+
+                student_evasion_list.append({
+                    "studentId": str(row['user_id']), # CORREÇÃO AQUI: Era 'user_id_risk'
+                    "studentName": student_name,
+                    "courseName": str(row['course_fullname']),
+                    "totalAccesses": int(row.get('total_actions_global', 0)),
+                    "daysWithoutAccess": days_without_access, # Usando o valor tratado
+                    "riskScore": int(row['riskScoreDisplay']), 
+                    "evasionReasons": reasons_for_student
+                })
+        current_app.logger.debug(f"[{datetime.now()}] student_evasion_list final gerada para {len(student_evasion_list)} alunos em risco.")
         
-        current_app.logger.debug(f"[{datetime.now()}] Alunos em risco para lista de evasão (por curso): {len(student_evasion_list)}")
+        evasion_risk_count = students_at_risk 
 
-        # --- Prepara e Retorna a resposta JSON final ---
         response_data = {
             "professorNome": professor_id,
             "totalStudents": total_students,
             "studentsAtRisk": students_at_risk,
             "totalActivities": total_activities, 
             "currentModuleInfo": {
-                "number": current_module_info["module_number"],
-                "start_date": current_module_info["start_date"].isoformat(),
-                "end_date": current_module_info["end_date"].isoformat(),
-                "display_name": current_module_info["display_name"]
+                "number": current_module_info["module_number"] if current_module_info else None,
+                "start_date": current_module_info["start_date"].isoformat() if current_module_info and "start_date" in current_module_info and pd.notna(current_module_info["start_date"]) else None,
+                "end_date": current_module_info["end_date"].isoformat() if current_module_info and "end_date" in current_module_info and pd.notna(current_module_info["end_date"]) else None,
+                "display_name": current_module_info["display_name"] if current_module_info else None
             },
             "courseSummaries": course_summaries_list,
             "recentActivities": recent_activities_data,
-            "evasionRiskCount": evasion_risk_count, 
-            "studentEvasionList": student_evasion_list 
+            "evasionRiskCount": evasion_risk_count,
+            "studentEvasionList": student_evasion_list
         }
 
         current_app.logger.debug(f"[{datetime.now()}] Dados de resposta final: {json.dumps(response_data, indent=2, default=str)}")
@@ -275,3 +384,4 @@ def get_professor_dashboard_data():
     except Exception as e:
         current_app.logger.error(f"[{datetime.now()}] Erro inesperado na função get_professor_dashboard_data: {e}", exc_info=True)
         return jsonify({"error": "Erro interno do servidor Flask", "details": str(e)}), 500
+
