@@ -15,6 +15,7 @@ from routes.professor_routes import professor_bp
 from routes.evasion_report_routes import evasion_report_bp
 from routes.status_routes import status_bp
 from routes.student_routes import student_bp
+from routes.course_routes import course_bp # Nova importação
 
 
 # Configuração do Logger
@@ -169,6 +170,7 @@ app.register_blueprint(professor_bp)
 app.register_blueprint(evasion_report_bp)
 app.register_blueprint(student_bp)
 app.register_blueprint(status_bp)
+app.register_blueprint(course_bp)
 
 if __name__ == '__main__':
     # Este é um servidor de desenvolvimento, não recomendado para produção
