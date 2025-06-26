@@ -1,0 +1,114 @@
+﻿@model IaPioniers.Models.ViewModels.StudentViewModel 
+
+@{
+    ViewData["Title"] = "Alunos";
+    Layout = "_Layout"; // Mantém o uso do layout padrão
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="main-content">
+    <header class="top-header"> @* Estrutura de cabeçalho similar ao Dashboard *@
+        <h1>Alunos</h1>
+        <div class="user-profile">
+            <span class="user-name">Prof. @Model.ProfessorNome</span>
+        </div>
+    </header>
+
+    @* Seletor de Turma e Barra de Pesquisa (conforme image_4a4381.png) *@
+    <div class="filter-tools">
+        <div class="dropdown-container">
+            <select asp-for="SelectedClass" asp-items="Model.ClassesSelectList" class="form-select">
+                <option value="">Selecione a Turma</option> @* Uma opção opcional para "selecione" *@
+            </select>
+            <i class="fas fa-chevron-down dropdown-icon"></i> @* Ícone de seta para o dropdown *@
+        </div>
+        <div class="search-box">
+            <input type="text" placeholder="Pesquisar Aluno" class="search-input" />
+            <i class="fas fa-search search-icon"></i> @* Ícone de pesquisa *@
+        </div>
+    </div>
+
+    @* Seção para a lista de alunos em formato de cards (linhas, conforme image_4a4381.png) *@
+    <section class="student-list-container">
+        <div class="student-list-header"> @* Cabeçalho das colunas *@
+            <h3>Nome do Aluno</h3>
+            <h3>Status</h3>
+            <h3>Entregas Recentes</h3>
+        </div>
+
+        <div class="student-cards-grid"> @* Grid para os cards individuais de alunos *@
+            @if (Model.Students != null && Model.Students.Any())
+            {
+                @foreach (var student in Model.Students)
+                {
+                    // Lógica para determinar o caminho do avatar com base no nome do aluno (ajuste conforme suas imagens)
+                    string avatarFileName = "default_avatar.png"; // Avatar padrão caso nenhum nome seja correspondido
+                    if (student.userName.Contains("Maria Eduarda")) { }
+                    else if (student.userName.Contains("Talles Gabriel")) {  }
+                    else if (student.userName.Contains("Geovana Fernandes")) {  }
+                    else if (student.userName.Contains("Gabrielly")) {  }
+                    // Adicione mais condições conforme necessário para outros alunos
+
+                    // Lógica para determinar o texto de "Entregas Recentes" com base no status ou outros critérios
+                    string recentDeliveryText = "Nenhuma Entrega"; // Texto padrão
+                    if (student.status == "Participando") { recentDeliveryText = "Fórum"; }
+                    else if (student.status == "Atrasado") { recentDeliveryText = "Unidade"; }
+                    // Adicione mais condições aqui para outros tipos de entregas ou informações
+
+                    <div class="student-card">
+                        <div class="student-info">
+                            <span class="student-name">@student.userName</span> @* Exibe o nome do aluno do seu StudentSummary *@
+                        </div>
+                        <div class="student-status-display">
+                            @{
+                                var statusIconClass = "";
+                                var statusTextClass = "";
+                                // Lógica para definir a classe do ícone e do texto com base no 'status' do seu StudentSummary
+                                if (student.status != null)
+                                {
+                                    switch (student.status.ToLower())
+                                    {
+                                        case "participando":
+                                            statusIconClass = "fas fa-check-circle";
+                                            statusTextClass = "status-participando";
+                                            break;
+                                        case "inativo":
+                                            statusIconClass = "fas fa-times-circle";
+                                            statusTextClass = "status-inativo";
+                                            break;
+                                        case "atrasado":
+                                            statusIconClass = "fas fa-exclamation-triangle";
+                                            statusTextClass = "status-atrasado";
+                                            break;
+                                        default:
+                                            statusIconClass = "fas fa-info-circle"; // Ícone padrão para outros status
+                                            statusTextClass = "status-default"; // Classe padrão de cor
+                                            break;
+                                    }
+                                }
+                            }
+                            <i class="@statusIconClass"></i> <span class="@statusTextClass">@student.status</span> @* Exibe o status do seu StudentSummary *@
+                        </div>
+                        <div class="student-delivery-display">
+                            <i class="fas fa-file-alt"></i> <span class="delivery-text">@recentDeliveryText</span> @* Exibe o texto de entrega recente *@
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="no-data-message">Nenhum aluno encontrado para a turma selecionada.</p>
+            }
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        // Adicione scripts JS específicos para esta página aqui, se houver necessidade de interatividade
+        // Por exemplo, filtros dinâmicos, ou alguma lógica de busca.
+    </script>
+}

@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+
 using Newtonsoft.Json; // Certifique-se de ter o pacote Newtonsoft.Json instalado no seu projeto C#
+
 
 
 namespace IaPioniers.Models.ViewModels
